@@ -1,14 +1,23 @@
-import { getEvents } from "@/integration/events"
+import { getEventsCached } from "@/integration/cached"
 import { EventSection } from "@/components/dashboard/EventSection"
 import { StatCards } from "@/components/dashboard/StatCards"
+import { requireAdminPage } from "@/lib/auth/dal"
 
-export const revalidate = 30
+/**
+ * Rendered per request rather than prerendered at build time: the data
+ * cache below already removes the upstream roundtrip, and prerendering
+ * would freeze a build-time snapshot (or a build-time error) into HTML.
+ * Freshness comes from the cached read plus tag expiry on mutation.
+ */
+export const dynamic = "force-dynamic"
 
 export default async function DashboardPage() {
-  let events: Awaited<ReturnType<typeof getEvents>> = []
+  await requireAdminPage()
+
+  let events: Awaited<ReturnType<typeof getEventsCached>> = []
   let error: string | null = null
   try {
-    events = await getEvents()
+    events = await getEventsCached()
   } catch (e) {
     error = e instanceof Error ? e.message : "Could not load events."
   }

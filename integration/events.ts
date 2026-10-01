@@ -29,6 +29,10 @@ export async function createEvent(
       date: input.date,
       location: input.location ?? "",
       description: input.description ?? "",
+      // Optional today (the event form collects neither), but validated by
+      // the backend whenever it is present.
+      orgId: input.orgId ?? "",
+      time: input.time ?? "",
     }
   )
   return response.event

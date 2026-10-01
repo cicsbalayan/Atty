@@ -49,15 +49,33 @@ export interface FilterOptions {
  * list, so facet options never shrink as filters are applied.
  */
 export function distinctFilterOptions(records: AttendanceRecord[]): FilterOptions {
-  const pick = (get: (r: AttendanceRecord) => string): string[] =>
-    [...new Set(records.map((r) => get(r).trim()).filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b)
-    )
+  // One pass populating four sets, rather than four map+Set passes with a
+  // sort each: this runs over the full unfiltered list on every render of
+  // the event detail page.
+  const colleges = new Set<string>()
+  const programs = new Set<string>()
+  const yearLevels = new Set<string>()
+  const genders = new Set<string>()
+
+  for (const record of records) {
+    const college = record.college.trim()
+    if (college) colleges.add(college)
+    const program = record.program.trim()
+    if (program) programs.add(program)
+    const yearLevel = record.yearLevel.trim()
+    if (yearLevel) yearLevels.add(yearLevel)
+    const gender = record.gender.trim()
+    if (gender) genders.add(gender)
+  }
+
+  const sorted = (values: Set<string>): string[] =>
+    [...values].sort((a, b) => a.localeCompare(b))
+
   return {
-    colleges: pick((r) => r.college),
-    programs: pick((r) => r.program),
-    yearLevels: pick((r) => r.yearLevel),
-    genders: pick((r) => r.gender),
+    colleges: sorted(colleges),
+    programs: sorted(programs),
+    yearLevels: sorted(yearLevels),
+    genders: sorted(genders),
   }
 }
 
@@ -66,11 +84,19 @@ export function filterAttendance(
   filters: AttendanceFilters
 ): AttendanceRecord[] {
   const q = filters.q?.trim().toLowerCase()
+  if (!q) {
+    // No free-text term: facet predicates alone, no per-record haystack.
+    return records.filter(
+      (record) =>
+        matches(record.college, filters.college) &&
+        matches(record.program, filters.program) &&
+        matches(record.yearLevel, filters.yearLevel) &&
+        matches(record.gender, filters.gender)
+    )
+  }
   return records.filter((record) => {
-    if (q) {
-      const haystack = [record.srcode, record.name].join(" ").toLowerCase()
-      if (!haystack.includes(q)) return false
-    }
+    const haystack = `${record.srcode} ${record.name}`.toLowerCase()
+    if (!haystack.includes(q)) return false
     return (
       matches(record.college, filters.college) &&
       matches(record.program, filters.program) &&

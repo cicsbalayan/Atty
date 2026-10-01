@@ -24,6 +24,8 @@ const sampleEvent: SchoolEvent = {
   sheetName: "EVT-001",
   location: "Gymnasium",
   description: "Welcome event.",
+  orgId: "ORG-001",
+  time: "12:00 pm - 5:00 pm",
 }
 
 beforeEach(() => {
@@ -64,17 +66,47 @@ describe("events integration", () => {
       date: "2026-09-20",
       location: "Gymnasium",
       description: "Welcome event.",
+      orgId: "",
+      time: "",
     })
   })
 
-  it("defaults missing location/description to empty strings", async () => {
-    mockSuccess({ event: { ...sampleEvent, location: "", description: "" } })
+  it("defaults missing location/description/orgId/time to empty strings", async () => {
+    mockSuccess({
+      event: {
+        ...sampleEvent,
+        location: "",
+        description: "",
+        orgId: "",
+        time: "",
+      },
+    })
     await createEvent({ name: sampleEvent.name, date: "2026-09-20" })
     expect(requestMock).toHaveBeenCalledWith("createEvent", {
       name: sampleEvent.name,
       date: "2026-09-20",
       location: "",
       description: "",
+      orgId: "",
+      time: "",
+    })
+  })
+
+  it("forwards an orgId and time range when supplied", async () => {
+    mockSuccess({ event: sampleEvent })
+    await createEvent({
+      name: sampleEvent.name,
+      date: "2026-09-20",
+      orgId: "ORG-001",
+      time: "12:00 pm - 5:00 pm",
+    })
+    expect(requestMock).toHaveBeenCalledWith("createEvent", {
+      name: sampleEvent.name,
+      date: "2026-09-20",
+      location: "",
+      description: "",
+      orgId: "ORG-001",
+      time: "12:00 pm - 5:00 pm",
     })
   })
 

@@ -1,17 +1,23 @@
 import { notFound } from "next/navigation"
-import { getEvent } from "@/integration/events"
+import { getEventCachedFor } from "@/integration/cached"
 import { CheckInForm } from "@/components/attendance/CheckInForm"
 import { FullscreenToggle } from "@/components/attendance/FullscreenToggle"
 import { EventStatusBadge } from "@/components/events/EventStatusBadge"
+import { requireAdminPage } from "@/lib/auth/dal"
 import { formatEventDate } from "@/lib/format"
 
-export const revalidate = 10
+export const dynamic = "force-dynamic"
 
 export default async function CheckInPage({ params }: { params: Promise<{ eventId: string }> }) {
+  // Staff authenticate once with the PIN, then operate the kiosk for the
+  // life of the session. The door workflow is not left open to anonymous
+  // callers, because recording attendance is a write to the spreadsheet.
+  await requireAdminPage()
+
   const { eventId } = await params
-  let event: Awaited<ReturnType<typeof getEvent>> | null = null
+  let event: Awaited<ReturnType<typeof getEventCachedFor>> | null = null
   try {
-    event = await getEvent(eventId)
+    event = await getEventCachedFor(eventId)
   } catch {
     notFound()
   }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest"
 import type { AttendanceRecord } from "@/models/attendance"
 import {
+  distinctFilterOptions,
   filterAttendance,
   parseAttendanceFilters,
   toAttendanceCsv,
@@ -92,6 +93,35 @@ describe("filterAttendance", () => {
     expect(
       filterAttendance(records, { college: "CICS", gender: "Male" })
     ).toHaveLength(1)
+  })
+})
+
+describe("distinctFilterOptions", () => {
+  it("derives sorted, deduplicated options from the full list", () => {
+    expect(distinctFilterOptions(records)).toEqual({
+      colleges: ["CICS", "COE"],
+      programs: ["BSCS", "BSEE", "BSIT"],
+      yearLevels: ["First Year", "Second Year"],
+      genders: ["Female", "Male"],
+    })
+  })
+
+  it("trims values and drops blanks", () => {
+    const options = distinctFilterOptions([
+      { ...records[0], college: "  CICS  ", program: "   ", gender: "" },
+    ])
+    expect(options.colleges).toEqual(["CICS"])
+    expect(options.programs).toEqual([])
+    expect(options.genders).toEqual([])
+  })
+
+  it("returns empty options for an empty list", () => {
+    expect(distinctFilterOptions([])).toEqual({
+      colleges: [],
+      programs: [],
+      yearLevels: [],
+      genders: [],
+    })
   })
 })
 

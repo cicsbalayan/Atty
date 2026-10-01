@@ -4,6 +4,7 @@ import type {
   RecordedAttendance,
 } from "./attendance"
 import type { SchoolEvent } from "./event"
+import type { Organization } from "./organization"
 import type { AttendanceReport } from "./report"
 import type { Student } from "./student"
 
@@ -20,6 +21,12 @@ export type ApiSuccess<TPayload extends object> = {
 
 export type ApiResult<TPayload extends object> =
   ApiSuccess<TPayload> | ApiFailure
+
+export type OrganizationsResponse = ApiSuccess<{
+  organizations: Organization[]
+}>
+
+export type OrganizationResponse = ApiSuccess<{ organization: Organization }>
 
 export type EventsResponse = ApiSuccess<{ events: SchoolEvent[] }>
 
@@ -46,6 +53,7 @@ export const API_ERROR_CODES = {
   CONFIGURATION_ERROR: "CONFIGURATION_ERROR",
   EVENT_NOT_FOUND: "EVENT_NOT_FOUND",
   EVENT_NOT_ACTIVE: "EVENT_NOT_ACTIVE",
+  ORG_NOT_FOUND: "ORG_NOT_FOUND",
   SRCODE_NOT_FOUND: "SRCODE_NOT_FOUND",
   DUPLICATE_ATTENDANCE: "DUPLICATE_ATTENDANCE",
   INTERNAL_ERROR: "INTERNAL_ERROR",

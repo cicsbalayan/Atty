@@ -15,12 +15,51 @@ var Attendance = {
   /**
    * 1-based row of an existing attendance entry, or -1.
    *
-   * @param {string} eventId
+   * Only used to fetch the original timestamp for a re-scan. Duplicate
+   * detection itself goes through hasAttendance, which reads a single
+   * column instead of the whole row.
+   *
+   * @param {string} sheetName - The event's attendance sheet, not the ID.
    * @param {string} srcode
    * @returns {number}
    */
-  findRow: function (eventId, srcode) {
-    return Sheets.findRowByValue(eventId, Config.COLUMNS.ATTENDANCE.SRCODE, srcode)
+  findRow: function (sheetName, srcode) {
+    return Sheets.findRowByValue(sheetName, Config.COLUMNS.ATTENDANCE.SRCODE, srcode)
+  },
+
+  /**
+   * Whether an SRCODE already appears in the event's attendance sheet.
+   *
+   * Reads only the SRCODE column rather than the whole used range, which
+   * is the difference between one narrow column read and a full row read on
+   * every validate and every record. Returns true on any read failure so a
+   * transient error can never be mistaken for "not present" and silently
+   * allow a duplicate row.
+   *
+   * @param {string} sheetName
+   * @param {string} srcode
+   * @returns {boolean}
+   */
+  hasAttendance: function (sheetName, srcode) {
+    try {
+      var sheet = Sheets.sheetByName(sheetName)
+      if (!sheet) return false
+      var lastRow = sheet.getLastRow()
+      if (lastRow < Config.ROW_START) return false
+      var column = Config.COLUMNS.ATTENDANCE.SRCODE + 1
+      var values = sheet
+        .getRange(Config.ROW_START, column, lastRow - Config.ROW_START + 1, 1)
+        .getValues()
+      var target = String(srcode || "").trim()
+      for (var i = 0; i < values.length; i++) {
+        if (String(values[i][0] || "").trim() === target) return true
+      }
+      return false
+    } catch (error) {
+      // Fail closed: a duplicate is recoverable, a silently dropped
+      // attendance row is not.
+      return true
+    }
   },
 
   /**
@@ -34,7 +73,7 @@ var Attendance = {
     var event = Events.assertById(eventId)
     Events.assertCanRecord(event)
     var student = Students.assertExists(srcode)
-    if (Attendance.findRow(eventId, srcode) > 0) {
+    if (Attendance.hasAttendance(event.sheetName, srcode)) {
       throw new AppError(
         Responses.CODES.DUPLICATE_ATTENDANCE,
         "Student has already attended this event."
@@ -55,13 +94,16 @@ var Attendance = {
   check: function (eventId, srcode) {
     var event = Events.assertById(eventId)
     var student = Students.getBySrcode(srcode)
-    var row = Attendance.findRow(eventId, srcode)
-    var result = { present: row > 0 }
+    var present = Attendance.hasAttendance(event.sheetName, srcode)
+    var result = { present: present }
     if (student) result.student = student
-    if (row > 0) {
-      result.timestamp = Models.formatDateTime(
-        Sheets.getCell(event.sheetName, row, Config.COLUMNS.ATTENDANCE.TIMESTAMP + 1)
-      )
+    if (present) {
+      var row = Attendance.findRow(event.sheetName, srcode)
+      if (row > 0) {
+        result.timestamp = Models.formatDateTime(
+          Sheets.getCell(event.sheetName, row, Config.COLUMNS.ATTENDANCE.TIMESTAMP + 1)
+        )
+      }
     }
     return result
   },

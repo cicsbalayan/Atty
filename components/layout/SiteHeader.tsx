@@ -1,5 +1,6 @@
 import Link from "next/link"
 import { ScanLine } from "lucide-react"
+import { LockButton } from "@/components/auth/LockButton"
 import { ThemeToggle } from "./ThemeToggle"
 
 export function SiteHeader() {
@@ -15,7 +16,9 @@ export function SiteHeader() {
         </span>
       </Link>
       <div className="flex items-center gap-2">
-        {/* Auth placeholder: UserSlot will live here when 3rd-party auth lands */}
+        {/* Fills the UserSlot reserved in DESIGN.md: one role, no user
+            records, so the useful control is the one that ends the session. */}
+        <LockButton />
         <ThemeToggle />
       </div>
     </header>

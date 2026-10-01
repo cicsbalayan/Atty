@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server"
-import { getAttendance } from "@/integration/attendance"
+import { getAttendanceCachedFor } from "@/integration/cached"
 import {
   filterAttendance,
   parseAttendanceFilters,
   toAttendanceCsv,
 } from "@/lib/attendance"
+import { requireAdmin } from "@/lib/auth/dal"
 import { respondWith } from "@/lib/api"
 
 export const dynamic = "force-dynamic"
@@ -18,10 +19,11 @@ type ExportParams = { params: Promise<{ eventId: string }> }
  */
 export async function GET(request: Request, context: ExportParams) {
   return respondWith(async () => {
+    await requireAdmin()
     const { eventId } = await context.params
     const filters = parseAttendanceFilters(new URL(request.url).searchParams)
     const csv = toAttendanceCsv(
-      filterAttendance(await getAttendance(eventId), filters)
+      filterAttendance(await getAttendanceCachedFor(eventId), filters)
     )
     return new NextResponse(csv, {
       headers: {

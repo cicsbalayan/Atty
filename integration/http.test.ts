@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest"
 
 process.env.APPS_SCRIPT_URL = "https://example.test/exec"
 process.env.APPS_SCRIPT_SECRET = "test-secret"
+// Required by `getAppsScriptConfig` on every upstream call. Must clear the
+// 32-character minimum, or the request fails closed before it is sent.
+process.env.ADMIN_SERVICE_KEY = "test-admin-service-key-000000000000"
 
 function mockFetch(impl: (url: string, init?: RequestInit) => unknown) {
   const spy = vi.fn(async (url: string, init?: RequestInit) => ({
@@ -57,6 +60,20 @@ describe("upstream read cache", () => {
     await requestAppsScript("getAttendance", { eventId: "EVT-001" })
     // warm-up + read POST + mutation POST + re-fetch POST (cache was cleared).
     expect(fetchSpy).toHaveBeenCalledTimes(4)
+  })
+
+  it("sends both credentials on every upstream call", async () => {
+    const fetchSpy = mockFetch(() => ok({ events: [] }))
+    const { requestAppsScript } = await import("./http")
+    await requestAppsScript("getEvents")
+
+    const post = fetchSpy.mock.calls.find(([, init]) => init?.method === "POST")
+    const body = JSON.parse(String(post?.[1]?.body ?? "{}")) as Record<string, string>
+    // Apps Script requires both. If either is dropped, the upstream rejects
+    // every request and the whole app fails closed.
+    expect(body.secret).toBe("test-secret")
+    expect(body.adminKey).toBe("test-admin-service-key-000000000000")
+    expect(body.action).toBe("getEvents")
   })
 
   it("stays disabled when opted out", async () => {

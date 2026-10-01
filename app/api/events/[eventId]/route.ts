@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server"
-import { closeEvent, getEvent, updateEvent } from "@/integration/events"
+import { closeEvent, updateEvent } from "@/integration/events"
+import { getEventCachedFor } from "@/integration/cached"
+import { expireEvent } from "@/integration/invalidate"
+import { requireAdmin } from "@/lib/auth/dal"
 import type { UpdateEventInput } from "@/models/event"
 import { cachedJson, HttpError, respondWith } from "@/lib/api"
 
@@ -13,12 +16,15 @@ const UPDATABLE_FIELDS = [
   "location",
   "description",
   "status",
+  "orgId",
+  "time",
 ] as const
 
 export async function GET(_request: Request, context: EventParams) {
   return respondWith(async () => {
+    await requireAdmin()
     const { eventId } = await context.params
-    const event = await getEvent(eventId)
+    const event = await getEventCachedFor(eventId)
     return cachedJson({ success: true, event }, 30)
   })
 }
@@ -31,10 +37,12 @@ export async function GET(_request: Request, context: EventParams) {
  */
 export async function PATCH(request: Request, context: EventParams) {
   return respondWith(async () => {
+    await requireAdmin()
     const { eventId } = await context.params
     const raw = await request.text()
     if (!raw.trim()) {
       const event = await closeEvent(eventId)
+      expireEvent(eventId)
       return NextResponse.json({
         success: true,
         message: "Event closed successfully.",
@@ -43,6 +51,7 @@ export async function PATCH(request: Request, context: EventParams) {
     }
     const input = parsePatchBody(raw)
     const event = await updateEvent(eventId, input)
+    expireEvent(eventId)
     return NextResponse.json({
       success: true,
       message: "Event updated successfully.",
@@ -75,7 +84,7 @@ function parsePatchBody(raw: string): UpdateEventInput {
     throw new HttpError(
       400,
       "INVALID_FIELD",
-      "Provide at least one of: name, date, location, description, status."
+      "Provide at least one of: name, date, location, description, status, orgId, time."
     )
   }
   return input

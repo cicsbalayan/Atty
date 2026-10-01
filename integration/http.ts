@@ -1,6 +1,6 @@
 import { getAppsScriptConfig } from "./config"
 import { AppsScriptError } from "./errors"
-import type { ApiFailure, ApiResult, ApiSuccess } from "@/models/api"
+import type { ApiResult, ApiSuccess } from "@/models/api"
 
 const REQUEST_TIMEOUT_MS = 15_000
 const MAX_ATTEMPTS = 2
@@ -14,6 +14,8 @@ const MAX_ATTEMPTS = 2
  * writes stay authoritative. Disabled under test to keep suites hermetic.
  */
 const READ_TTL_MS: Record<string, number> = {
+  getOrganizations: 30_000,
+  getOrganization: 30_000,
   getEvents: 30_000,
   getEvent: 30_000,
   getAttendance: 10_000,
@@ -48,6 +50,14 @@ function invalidateReads(...prefixes: string[]): void {
  */
 function invalidatedBy(action: string): string[] {
   switch (action) {
+    case "createOrganization":
+      return ["getOrganizations:"]
+    case "updateOrganization":
+      return ["getOrganizations:", "getOrganization:"]
+    // A delete must not leave the row resolvable from a cached read, or
+    // a picker could keep offering an organization the operator just removed.
+    case "deleteOrganization":
+      return ["getOrganizations:", "getOrganization:"]
     case "createEvent":
       return ["getEvents:"]
     case "openEvent":
@@ -103,8 +113,13 @@ export async function requestAppsScript<TPayload extends object>(
   action: string,
   params: Record<string, unknown> = {}
 ): Promise<ApiSuccess<TPayload>> {
-  const { url, secret } = getAppsScriptConfig()
-  const body = JSON.stringify({ secret, action, ...params })
+  const { url, secret, adminKey } = getAppsScriptConfig()
+  // `adminKey` is the third credential Apps Script requires. It is a server
+  // service key rather than the caller's session token: every read here can
+  // be served from `unstable_cache`, which runs outside any request context,
+  // so the originating session is not available at this point. See
+  // `lib/auth/config.ts` for why a service key is the right trade-off.
+  const body = JSON.stringify({ secret, adminKey, action, ...params })
 
   if (!warmedUp) {
     await ensureWarmedUp(url)

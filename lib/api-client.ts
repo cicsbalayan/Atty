@@ -11,6 +11,9 @@ import type {
 import type { AttendanceFilters } from "@/lib/attendance"
 import type { CreateEventInput, UpdateEventInput } from "@/models/event"
 
+/** Result of a sign-in attempt. */
+export type LoginResponse = { success: true } | ApiFailure
+
 export class ApiError extends Error {
   constructor(
     readonly code: string,
@@ -43,6 +46,32 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function listEvents(): Promise<EventsResponse> {
   return request<EventsResponse>("/api/events", { cache: "no-store" })
+}
+
+/**
+ * Exchanges a staff PIN for a session cookie.
+ *
+ * Returns the failure payload rather than throwing, so the login form can
+ * show the server's message verbatim. That message is deliberately uniform
+ * ("Incorrect PIN.") and carries no hint about which part was wrong.
+ */
+export async function login(pin: string): Promise<LoginResponse> {
+  const res = await fetch("/api/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pin }),
+    cache: "no-store",
+  })
+  const data = (await res.json().catch(() => null)) as LoginResponse | null
+  if (!data) {
+    return { success: false, code: "INTERNAL_ERROR", message: "Could not sign in." }
+  }
+  return data
+}
+
+/** Clears the session cookie. */
+export async function logout(): Promise<void> {
+  await fetch("/api/auth/logout", { method: "POST", cache: "no-store" })
 }
 
 export function getEvent(eventId: string): Promise<EventResponse> {

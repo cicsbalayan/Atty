@@ -1,22 +1,30 @@
-import { getEvents } from "@/integration/events"
+import { getEventsCached } from "@/integration/cached"
 import { EventCard } from "@/components/events/EventCard"
 import { EventFormDialogLazy } from "@/components/events/EventFormDialogLazy"
+import { requireAdminPage } from "@/lib/auth/dal"
 
-export const revalidate = 30
+/**
+ * Request-time rendered for the same reason as the dashboard, and because
+ * the status/search filters come from searchParams. The cached read keeps
+ * repeat views off the Apps Script roundtrip regardless.
+ */
+export const dynamic = "force-dynamic"
 
 export default async function EventsPage({
   searchParams,
 }: {
   searchParams: Promise<{ status?: string; q?: string }>
 }) {
+  await requireAdminPage()
+
   const params = await searchParams
   const status = params.status ?? "All"
   const q = (params.q ?? "").toLowerCase()
 
-  let events: Awaited<ReturnType<typeof getEvents>> = []
+  let events: Awaited<ReturnType<typeof getEventsCached>> = []
   let error: string | null = null
   try {
-    events = await getEvents()
+    events = await getEventsCached()
   } catch (e) {
     error = e instanceof Error ? e.message : "Could not load events."
   }

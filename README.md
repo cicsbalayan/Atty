@@ -9,9 +9,11 @@ A web-based attendance system for school events built with **Next.js**,
 - Every event gets a dynamically created attendance sheet named after its
   Event ID (e.g. `EVT-001`) that stores only `Timestamp` + `SRCODE`.
 - The **Apps Script Web App** is the backend/API: it validates requests,
-  records attendance, prevents duplicates, and generates reports.
+  records attendance, prevents duplicates, and generates reports. It requires
+  two credentials on every request, so the URL alone grants nothing.
 - The **Next.js server** is a thin BFF: it forwards client requests to the
-  Web App with a shared secret, so credentials never reach the browser.
+  Web App with the shared secrets, so credentials never reach the browser.
+- Access is **admin-only**: staff sign in with an 8-digit PIN at `/login`.
 
 ## Architecture
 
@@ -36,7 +38,7 @@ student data is duplicated into event sheets.
 | Path                | Purpose                                           |
 | ------------------- | ------------------------------------------------- |
 | `apps-script/`      | Apps Script backend, deployed as a Web App        |
-| `models/`           | Shared domain types (Student, Event, Attendance…) |
+| `models/`           | Shared domain types (Student, Event, Organization, Attendance…) |
 | `integration/`      | Server-side client for the Apps Script API        |
 | `app/api/`          | Next.js route handlers (BFF)                      |
 | `lib/api.ts`        | Route handler validation + error mapping          |
@@ -46,8 +48,11 @@ Each source file stays under 400 lines to keep the codebase maintainable.
 ## Setup
 
 1. Deploy the Apps Script backend — see `apps-script/README.md`.
-2. Create `.env.local` from `.env.example` and fill in `APPS_SCRIPT_URL` and
-   `APPS_SCRIPT_SECRET`.
+2. Create `.env.local` from `.env.example` and fill in all five values:
+   `APPS_SCRIPT_URL`, `APPS_SCRIPT_SECRET`, `ADMIN_SERVICE_KEY`, `ADMIN_PIN`,
+   and `SESSION_SECRET`. The last three gate admin sign-in; the two high-entropy
+   ones can be generated with
+   `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
 3. Run the app:
 
 ```bash
@@ -55,17 +60,52 @@ npm install
 npm run dev
 ```
 
+Open <http://localhost:3000> and sign in with the 8-digit `ADMIN_PIN`.
+
+Full walkthrough, including the spreadsheet layout and every page, is in
+[`docs/getting-started.md`](docs/getting-started.md).
+
+## Documentation
+
+Reference documentation lives in [`docs/`](docs/):
+
+| Document | Covers |
+| --- | --- |
+| [`docs/getting-started.md`](docs/getting-started.md) | Setup, spreadsheet layout, backend deployment, using every page |
+| [`docs/tech-stack.md`](docs/tech-stack.md) | Technologies, versions, and why each choice was made |
+| [`docs/architecture.md`](docs/architecture.md) | Request lifecycle and trust boundaries |
+| [`docs/authentication.md`](docs/authentication.md) | The PIN, keys, rotation, brute-force limits, kiosk operation |
+| [`docs/session-handling.md`](docs/session-handling.md) | Token format, cookie attributes, the three enforcement layers |
+| [`docs/api-security.md`](docs/api-security.md) | Apps Script credentials, per-action authorization, headers |
+| [`docs/testing.md`](docs/testing.md) | Running tests and verifying changes by hand |
+
+## Access control
+
+The application is **admin-only**. There is one role and no user records: staff
+sign in at `/login` with an 8-digit PIN and receive a signed session cookie.
+Every page and every API route requires a valid session, enforced in three
+independent layers so no single mistake opens the app. On the way to Google
+Sheets, the Next.js server presents two credentials, because the Apps Script web
+app is deployed `ANYONE_ANONYMOUS` and its URL alone must never be enough to
+reach the spreadsheet.
+
 ## API surface
 
 The Next.js app exposes these endpoints (all return JSON):
 
 | Method | Path                                    | Description                    |
 | ------ | --------------------------------------- | ------------------------------ |
+| GET    | `/api/organizations`                    | List active organizations      |
+| POST   | `/api/organizations`                    | Create an organization         |
+| GET    | `/api/organizations/[orgId]`            | Organization details (cached 30s) |
+| PATCH  | `/api/organizations/[orgId]`            | Update organization fields     |
+| DELETE | `/api/organizations/[orgId]`            | Soft delete (hides, keeps the row) |
+| POST   | `/api/organizations/[orgId]/restore`    | Undo a soft delete             |
 | GET    | `/api/events`                           | List events                    |
 | POST   | `/api/events`                           | Create an event                |
 | GET    | `/api/events/[eventId]`                 | Event details (cached 30s)     |
 | POST   | `/api/events/[eventId]/open`            | Open an event (mark Active)    |
-| PATCH  | `/api/events/[eventId]`                 | Close (empty body) or update fields (JSON body) |
+| PATCH  | `/api/events/[eventId]`                 | Close (empty body) or update fields (`name`, `date`, `location`, `description`, `status`, `orgId`, `time`) |
 | GET    | `/api/events/[eventId]/attendance`      | Attendance records (`?q=&college=&program=&yearLevel=&gender=`) |
 | POST   | `/api/events/[eventId]/attendance`      | Record attendance              |
 | POST   | `/api/events/[eventId]/attendance/check`| Verify a student's attendance  |

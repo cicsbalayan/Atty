@@ -70,6 +70,18 @@ var Sheets = {
   },
 
   /**
+   * Permanently removes a row. Used for hard deletes only.
+   *
+   * @param {string} sheetName
+   * @param {number} row - 1-based row. The header row is never removed.
+   */
+  deleteRow: function (sheetName, row) {
+    var sheet = Sheets.sheetByName(sheetName)
+    if (!sheet || row < Config.ROW_START) return
+    sheet.deleteRow(row)
+  },
+
+  /**
    * Appends a row to the given sheet, creating the sheet if needed.
    *
    * @param {string} sheetName

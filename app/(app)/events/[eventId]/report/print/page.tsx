@@ -1,12 +1,12 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getEvent } from "@/integration/events"
-import { getAttendance } from "@/integration/attendance"
+import { getAttendanceCachedFor, getEventCachedFor } from "@/integration/cached"
 import { filterAttendance, parseAttendanceFilters } from "@/lib/attendance"
+import { requireAdminPage } from "@/lib/auth/dal"
 import { formatEventDate } from "@/lib/format"
 import { PrintButton } from "@/components/reports/PrintButton"
 
-export const revalidate = 10
+export const dynamic = "force-dynamic"
 
 export const metadata = { title: "Attendance Report" }
 
@@ -22,6 +22,11 @@ export default async function PrintReportPage({
   params: Promise<{ eventId: string }>
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  // The print view dumps every attendance row, so it is gated like any other
+  // read. It stays inside the `(app)` group because `@media print` targets
+  // `.app-shell` and `.app-chrome`; the gate is independent of the shell.
+  await requireAdminPage()
+
   const { eventId } = await params
   const raw = await searchParams
   const flat: Record<string, string> = {}
@@ -31,8 +36,8 @@ export default async function PrintReportPage({
   const filters = parseAttendanceFilters(new URLSearchParams(flat))
 
   const [event, attendance] = await Promise.all([
-    getEvent(eventId).catch(() => null),
-    getAttendance(eventId).catch(() => []),
+    getEventCachedFor(eventId).catch(() => null),
+    getAttendanceCachedFor(eventId).catch(() => []),
   ])
   if (!event) notFound()
   const rows = filterAttendance(attendance, filters)
