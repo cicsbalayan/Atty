@@ -9,12 +9,12 @@
 "use client"
 
 import * as React from "react"
-import { LockKeyhole } from "lucide-react"
+import { LockKeyhole, TriangleAlert } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { ApiError, login } from "@/lib/api-client"
 import { PIN_LENGTH } from "@/lib/auth/constants"
-import { PinField } from "./PinField"
+import { PIN_ERROR_ID, PinField } from "./PinField"
 
 export function LoginForm({ redirectTo }: { redirectTo: string }) {
   const [pin, setPin] = React.useState("")
@@ -66,7 +66,7 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
   }
 
   return (
-    <Card className="clay-topglow w-full max-w-sm">
+    <Card className="clay-topglow w-full max-w-lg">
       <CardContent>
         <form onSubmit={onSubmit} className="flex flex-col gap-4">
           <PinField
@@ -82,6 +82,21 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
             invalid={Boolean(error)}
             inputRef={inputRef}
           />
+          {/* Between the field and the button, in the order the eye already
+              travelled. Icon plus text, never colour alone (DESIGN.md 5.3),
+              and referenced by the field's aria-describedby so the input
+              announces its own error rather than relying on this live region
+              alone. */}
+          {error ? (
+            <p
+              id={PIN_ERROR_ID}
+              role="alert"
+              className="clay-pressed flex items-start gap-2 p-3 text-sm text-destructive"
+            >
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
+              <span>{error}</span>
+            </p>
+          ) : null}
           <Button
             type="submit"
             disabled={busy || pin.length !== PIN_LENGTH}
@@ -90,11 +105,6 @@ export function LoginForm({ redirectTo }: { redirectTo: string }) {
             <LockKeyhole className="size-5" aria-hidden />
             {busy ? "Signing in…" : "Sign in"}
           </Button>
-          {error ? (
-            <p role="alert" className="clay-pressed p-4 text-sm text-destructive">
-              {error}
-            </p>
-          ) : null}
         </form>
       </CardContent>
     </Card>
