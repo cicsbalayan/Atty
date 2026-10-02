@@ -1,10 +1,10 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
 import * as React from "react"
-import { ScanLine } from "lucide-react"
+import { Building2, CalendarDays, Clock, MapPin, ScanLine } from "lucide-react"
 import { getAttendanceCachedFor, getEventCachedFor, getOrganizationCachedFor } from "@/integration/cached"
 import { buttonVariants } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { EventActions } from "@/components/events/EventActions"
 import { EventStatusBadge } from "@/components/events/EventStatusBadge"
 import { AttendanceFilters } from "@/components/attendance/AttendanceFilters"
@@ -82,36 +82,56 @@ export default async function EventDetailPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <Card>
-        <CardHeader>
+      <Card className="clay-topglow">
+        <CardContent className="gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <EventStatusBadge status={event.status} />
+            <span className="clay-pressed px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+              {event.id}
+            </span>
+          </div>
           <div>
-            <CardTitle>{event.name}</CardTitle>
-            <p className="mt-1 font-mono text-xs text-muted-foreground">
-              {event.id} · {formatEventDate(event.date)}
-              {event.location ? ` · ${event.location}` : ""}
-            </p>
-            {org?.name || event.time ? (
-              <p className="mt-1 text-xs text-muted-foreground">
-                {[org?.name, event.time].filter(Boolean).join(" · ")}
-              </p>
+            <CardTitle className="display">{event.name}</CardTitle>
+            {event.description ? (
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{event.description}</p>
             ) : null}
           </div>
-          <EventStatusBadge status={event.status} />
-        </CardHeader>
-        <CardContent>
-          {event.description ? <p className="text-sm">{event.description}</p> : null}
-          <div className="flex flex-wrap gap-2">
-            <EventActions event={event} />
+          <dl className="flex flex-col gap-3">
+            {org?.name ? (
+              <div className="flex items-center gap-1.5 text-sm">
+                <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <dd className="font-semibold">{org.name}</dd>
+              </div>
+            ) : null}
+            <div className="clay-pressed grid grid-cols-2 gap-x-4 gap-y-3 p-4 sm:grid-cols-3">
+              <div className="flex items-center gap-1.5 text-sm">
+                <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <dd className="font-semibold">{formatEventDate(event.date)}</dd>
+              </div>
+              <div className="flex items-center gap-1.5 text-sm">
+                <Clock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <dd className="font-semibold">{event.time || "—"}</dd>
+              </div>
+              <div className="flex items-center gap-1.5 text-sm">
+                <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <dd className="font-semibold">{event.location || "—"}</dd>
+              </div>
+            </div>
+          </dl>
+          <div className="flex flex-wrap items-center gap-2">
             {event.status === "Active" ? (
               <Link
                 href={`/events/${event!.id}/check-in`}
-                className={buttonVariants({ size: "sm", className: "clay-btn" })}
+                className={buttonVariants({ className: "clay-btn clay-btn-primary" })}
               >
                 <ScanLine className="size-4" aria-hidden /> Take Attendance
               </Link>
             ) : null}
             <ExportButton eventId={event.id} filters={filters} />
             <RefreshButton />
+            <span className="sm:ml-auto">
+              <EventActions event={event} />
+            </span>
           </div>
         </CardContent>
       </Card>

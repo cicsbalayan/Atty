@@ -37,7 +37,7 @@ export function EventActions({ event }: { event: SchoolEvent }) {
       {event.status !== "Closed" ? (
         <Button
           disabled={busy}
-          variant="outline"
+          variant="destructive"
           onClick={() => void run(() => closeEvent(event.id))}
           className="clay-btn"
         >
