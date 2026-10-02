@@ -71,7 +71,14 @@ export function PinField({
         <div
           data-testid="pin-cells"
           aria-hidden="true"
-          className="grid grid-cols-8 gap-2"
+          className="grid gap-2"
+          // Derived, not a `grid-cols-8` literal: `CELLS` follows
+          // `PIN_LENGTH`, so a hardcoded track count would silently disagree
+          // with the cells and leave dead space or overflow. This is exactly
+          // what `grid-cols-8` emits, so the rendering is unchanged today.
+          style={{
+            gridTemplateColumns: `repeat(${PIN_LENGTH}, minmax(0, 1fr))`,
+          }}
         >
           {CELLS.map((index) => {
             const filled = index < value.length

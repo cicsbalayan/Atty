@@ -33,6 +33,45 @@ describe("PinField", () => {
     )
   })
 
+  it("hands the input element back through inputRef", () => {
+    // `LoginForm` autofocuses through this ref, and the focus indicator is
+    // driven by real focus. If the ref stopped resolving there would be no
+    // autofocus, no focus, and therefore no indicator at all -- the whole
+    // accessibility invariant failing behind a green suite, since nothing
+    // else here reads `.current`.
+    const inputRef = ref()
+    render(<PinField value="" onChange={() => {}} inputRef={inputRef} />)
+    expect(inputRef.current).toBe(screen.getByLabelText("PIN"))
+  })
+
+  it("keeps the attributes the single-input design depends on", () => {
+    render(<PinField value="" onChange={() => {}} inputRef={ref()} />)
+    const input = screen.getByLabelText("PIN") as HTMLInputElement
+    // `type="number"` silently discards a leading zero, and
+    // `Number("04812075")` is `4812075` -- which would collapse two distinct
+    // valid PINs into one. `inputMode` still gets the numeric keypad without
+    // the coercion.
+    expect(input.getAttribute("inputmode")).toBe("numeric")
+    expect(input.getAttribute("type")).toBeNull()
+    // A shared kiosk secret, deliberately kept out of password managers.
+    expect(input.getAttribute("autocomplete")).toBe("off")
+  })
+
+  it("sizes the grid track to the number of cells", () => {
+    const view = render(
+      <PinField value="" onChange={() => {}} inputRef={ref()} />
+    )
+    const grid = view.getByTestId("pin-cells")
+    // Derived rather than a `grid-cols-8` literal, so the track count cannot
+    // drift from `CELLS` if `PIN_LENGTH` ever changes. `minmax(0, 1fr)` is
+    // what `grid-cols-8` itself emits: equal-width and shrinkable.
+    expect(grid.style.gridTemplateColumns).toBe(
+      `repeat(${PIN_LENGTH}, minmax(0, 1fr))`
+    )
+    // The gap the indicator offset is sized against stays a class.
+    expect(grid.className).toContain("gap-2")
+  })
+
   it("renders a dot per entered digit and never the digit itself", () => {
     render(<PinField value="12" onChange={() => {}} inputRef={ref()} />)
     expect(screen.getByTestId("pin-filled-0")).toBeTruthy()
@@ -60,6 +99,9 @@ describe("PinField", () => {
     fireEvent.change(screen.getByLabelText("PIN"), {
       target: { value: "12345678901234" },
     })
+    // Content as well as length: any eight-digit string would satisfy a
+    // length-only assertion, so pin the slice itself.
+    expect(seen[0]).toBe("12345678")
     expect(seen[0]).toHaveLength(PIN_LENGTH)
   })
 
@@ -144,20 +186,6 @@ describe("PinField", () => {
     // Only the active cell is decorated.
     expect(view.getByTestId("pin-cell-0").className).not.toMatch(/\boutline-/)
     expect(view.getByTestId("pin-cell-2").className).not.toMatch(/\boutline-/)
-  })
-
-  it("offsets the indicator into the gap between cells", () => {
-    const view = render(
-      <PinField value="1" onChange={() => {}} inputRef={ref()} />
-    )
-    fireEvent.focus(screen.getByLabelText("PIN"))
-    // `gap-2` is 8px, so a 2px outline centred in it needs a 3px offset to
-    // clear the cell on both sides. Asserted against the gap so the two
-    // cannot drift apart unnoticed.
-    expect(view.getByTestId("pin-cells").className).toContain("gap-2")
-    expect(view.getByTestId("pin-cell-1").className).toMatch(
-      /\boutline-offset-/
-    )
   })
 
   it("points aria-describedby at the error only while invalid", () => {
