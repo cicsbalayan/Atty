@@ -116,23 +116,30 @@ cells against a 56px height.
 
 ```
 <div class="relative">
-  <div class="grid grid-cols-8 gap-2" aria-hidden="true">
+  <div class="grid gap-2" style="grid-template-columns: repeat(PIN_LENGTH, minmax(0, 1fr))" aria-hidden="true">
     8 x <div class="clay-input h-14"> ... </div>
   </div>
   <input id="pin" class="absolute inset-0 w-full opacity-0 font-mono text-xl caret-transparent" />
 </div>
 ```
 
-- **Cell sizing.** `grid-cols-8`, `gap-2` (8px), each cell `h-14` (56px). Cells
+- **Cell sizing.** An 8-track grid (`repeat(PIN_LENGTH, minmax(0, 1fr))`, so the
+  column count derives from the same constant as the cell array), `gap-2`
+  (8px), each cell `h-14` (56px). Cells
   carry `.clay-input` for the sunken well and inherit
   `--clay-radius-control` (18px) rather than introducing a new radius.
 - **Filled cell.** A `size-2.5 rounded-full` dot in `--clay-heading`. The digit
   is never rendered.
 - **Empty cell.** Nothing. No placeholder text.
-- **Active cell.** `focused && index === value.length`. Receives `ring-2
-  ring-primary`. No CSS transition: a focus indicator should appear immediately,
-  and omitting the transition also removes any `prefers-reduced-motion`
-  obligation.
+- **Active cell.** `focused && index === activeIndex`, where `activeIndex` is
+  `value.length` clamped to the last cell, so a complete PIN keeps the final
+  cell indicated while the field holds focus. Receives `outline-2
+  outline-offset-3 outline-primary` -- an outline, not a ring, because `ring-*`
+  writes `box-shadow` and would clobber the cell's own sunken-well inset. No
+  CSS transition: a focus indicator should appear immediately, and omitting the
+  transition also removes any `prefers-reduced-motion` obligation.
+  (Two human rulings 2026-10-02 -- clamp and outline -- override the `ring-2`
+  with raw length this spec originally carried.)
 - **Focus tracking.** The input is a sibling of the grid, so `:focus-within`
   cannot reach an individual cell. The component holds a `focused` boolean, set
   by the input's `onFocus` / `onBlur`, initialised to `false`. It starts false
@@ -190,7 +197,7 @@ enabled default button. It is kept as defence in depth.
 | Invalid state announced by the field | `aria-invalid` + `aria-describedby="pin-error"` |
 | Urgent message announced | `role="alert"` on the error |
 | Status never colour-only | `TriangleAlert` icon plus text (`DESIGN.md` 5.3) |
-| Focus visible | `ring-2 ring-primary` on the active cell, 3:1 minimum |
+| Focus visible | `outline-2 outline-offset-3 outline-primary` on the active cell, 3:1 minimum |
 | Touch targets | 51 x 56px cells, above the 44px minimum (`DESIGN.md` 5.6) |
 | Decorative icons hidden | `aria-hidden` on `TriangleAlert` |
 | Tab order | Theme toggle, PIN, Sign in. Unchanged. |

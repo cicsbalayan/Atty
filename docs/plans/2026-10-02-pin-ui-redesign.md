@@ -4,7 +4,7 @@
 
 **Goal:** Replace the single masked PIN text field with eight designed character cells backed by one real input, relocate the error beneath the field with an icon and correct ARIA wiring, and strip the two pieces of copy that carry no information.
 
-**Architecture:** `PinField` becomes a `relative` wrapper holding an eight-cell `grid-cols-8` grid plus a single absolutely positioned, transparent real `<input>` layered over it. The grid is `aria-hidden`; the input stays the single accessible field, so tab order, paste, the mobile keypad, and screen-reader behaviour are all inherited unchanged. `LoginForm` moves its error block between the field and the button, gives it an id and a `TriangleAlert` icon, and `page.tsx` loses the subtitle.
+**Architecture:** `PinField` becomes a `relative` wrapper holding an eight-cell grid (track derived from `PIN_LENGTH`) plus a single absolutely positioned, transparent real `<input>` layered over it. The grid is `aria-hidden`; the input stays the single accessible field, so tab order, paste, the mobile keypad, and screen-reader behaviour are all inherited unchanged. `LoginForm` moves its error block between the field and the button, gives it an id and a `TriangleAlert` icon, and `page.tsx` loses the subtitle.
 
 **Tech Stack:** Next.js 16 App Router, React 19, TypeScript strict, Tailwind 4 with the clay token system, Vitest plus `@testing-library/react` in jsdom. No new dependencies.
 
@@ -238,7 +238,12 @@ export function PinField({
   // focus genuinely lands. An optimistic `true` would draw a focus ring on a
   // field that does not have focus.
   const [focused, setFocused] = React.useState(false)
-  const activeIndex = value.length
+    // Clamped, not raw: with a full PIN, value.length runs to 8 while CELLS
+  // stops at 7, so the raw length would leave the focused field with no ring
+  // at all -- a WCAG 2.4.7 Focus Visible failure. Cell 7 keeps the ring on a
+  // complete PIN. Human ruling 2026-10-02, overrides the raw length this plan
+  // originally carried.
+  const activeIndex = Math.min(value.length, PIN_LENGTH - 1)
 
   return (
     <div className="flex flex-col gap-2">
@@ -248,7 +253,8 @@ export function PinField({
         <div
           data-testid="pin-cells"
           aria-hidden="true"
-          className="grid grid-cols-8 gap-2"
+          className="grid gap-2"
+          style={{ gridTemplateColumns: `repeat(${PIN_LENGTH}, minmax(0, 1fr))` }}
         >
           {CELLS.map((index) => {
             const filled = index < value.length
@@ -260,7 +266,11 @@ export function PinField({
                 data-active={active ? "true" : "false"}
                 className={cn(
                   "clay-input flex h-14 items-center justify-center",
-                  active && "ring-2 ring-primary"
+                  // Outline, not ring: ring-* writes box-shadow and would
+                  // clobber .clay-input's inset sunken well on this same
+                  // element. Human ruling 2026-10-02, overrides the
+                  // ring-2 text this plan originally carried.
+                  active && "outline-2 outline-offset-3 outline-primary"
                 )}
               >
                 {filled ? (
