@@ -528,7 +528,11 @@
 @media print {
   @page {
     size: legal landscape;
-    margin: 1.27cm;
+    /* The enlarged bottom margin is a reserved band that only the pinned
+       footer occupies. Table content stops at the page content box, so no row
+       can reach the band, and the band keeps the footer clear of the printer's
+       own non-printable edge. */
+    margin: 1.27cm 1.27cm 2.4cm;
   }
   .app-chrome,
   .no-print {
@@ -548,14 +552,18 @@
   .print-table thead {
     display: table-header-group;
   }
-  /* Pinned footer: parked inside the bottom margin (negative offset from
-     the content area), so it repeats at the same spot every page and no
-     table row can ever slide under it. */
+  /* Pinned footer. `position: fixed` keeps it out of the document flow, so
+     pagination can never break it onto a sheet of its own, and the repeating
+     header keeps every page visually identical. The negative offset seats it
+     inside the reserved 2.4cm bottom band rather than within a few
+     millimetres of the sheet edge, where it used to fall into the printer's
+     non-printable area and get pushed onto an extra page. */
   .report-footer {
     position: fixed;
-    bottom: -0.9cm;
+    bottom: -1.15cm;
     left: 0;
     right: 0;
+    text-align: center;
   }
   .print-table tr {
     break-inside: avoid;

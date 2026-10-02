@@ -61,9 +61,10 @@ export default async function PrintReportPage({
   }
   const bare: React.CSSProperties = { border: 0, padding: 0 }
 
-  // The letterhead, event block, column headers, and footer all live inside
-  // thead/tfoot, so every printed page repeats them in-flow — no overlap,
-  // no spillover, no fixed positioning.
+  // The letterhead, event block, and column headers live inside thead, so
+  // every printed page repeats them in-flow. The footer is a fixed sibling
+  // after the table, anchored into the reserved bottom margin band by
+  // `@media print`; see the `.report-footer` rule in `globals.css`.
   const letterhead = (
     <div>
       <div
@@ -112,29 +113,52 @@ export default async function PrintReportPage({
         {orgName}
       </p>
 
-        {/* Event details: centered lines */}
-        <div style={{ textAlign: "center", marginBottom: "8pt" }}>
-          <p style={{ fontFamily: TNR, fontSize: "11pt", margin: 0, textAlign: "center" }}>
-            Event:{" "}
-            <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>
-              <strong>{event.name}</strong>
-            </span>
-          </p>
-          <p style={{ fontFamily: TNR, fontSize: "11pt", margin: 0, textAlign: "center" }}>
+      {/* Event details.
+          The Date/Time/Venue row is a flex line, not inline text: flex items
+          never break onto a second row, so the venue stays beside the date
+          instead of being orphaned by whitespace line-breaking. Items also
+          refuse to shrink, so a long venue widens the row rather than being
+          clipped or overlapped. */}
+      <div style={{ marginBottom: "8pt" }}>
+        <p style={{ fontFamily: TNR, fontSize: "11pt", margin: 0, textAlign: "center" }}>
+          Event:{" "}
+          <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>
+            <strong>{event.name}</strong>
+          </span>
+        </p>
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "nowrap",
+            justifyContent: "center",
+            alignItems: "baseline",
+            gap: "4pt",
+            fontFamily: TNR,
+            fontSize: "11pt",
+          }}
+        >
+          <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
             Date:{" "}
             <span style={{ borderBottom: "1pt solid #000", padding: "0 12pt" }}>
               {formatEventDate(event.date)}
             </span>
-            {"  "}| Time:{" "}
-            <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>
-              {event.time || " "}
+          </span>
+          <span style={{ flexShrink: 0 }}>|</span>
+          <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+            Time:{" "}
+            <span style={{ borderBottom: "1pt solid #000", padding: "0 12pt" }}>
+              {event.time || " "}
             </span>
-            {"  "}| Venue:{" "}
-            <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>
-              {event.location || " "}
+          </span>
+          <span style={{ flexShrink: 0 }}>|</span>
+          <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
+            Venue:{" "}
+            <span style={{ borderBottom: "1pt solid #000", padding: "0 12pt" }}>
+              {event.location || " "}
             </span>
-          </p>
+          </span>
         </div>
+      </div>
     </div>
   )
 
@@ -201,7 +225,8 @@ export default async function PrintReportPage({
           </tbody>
         </table>
 
-        {/* Pinned footer: fixed inside the bottom margin on every page. */}
+        {/* Pinned footer: out of flow, so pagination can never break it onto
+            another sheet. `@media print` anchors it in the bottom margin band. */}
         <p
           className="report-footer"
           style={{
