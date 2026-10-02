@@ -1,4 +1,4 @@
-import { getEventsCached } from "@/integration/cached"
+import { getEventsCached, getOrganizationsCached } from "@/integration/cached"
 import { EventCard } from "@/components/events/EventCard"
 import { EventFormDialogLazy } from "@/components/events/EventFormDialogLazy"
 import { requireAdminPage } from "@/lib/auth/dal"
@@ -35,6 +35,10 @@ export default async function EventsPage({
     return true
   })
 
+  const orgNames: Record<string, string> = Object.fromEntries(
+    (await getOrganizationsCached().catch(() => [])).map((o) => [o.id, o.name])
+  )
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -51,7 +55,7 @@ export default async function EventsPage({
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard key={event.id} event={event} orgName={orgNames[event.orgId]} />
           ))}
         </div>
       )}

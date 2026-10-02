@@ -62,6 +62,34 @@ describe("upstream read cache", () => {
     expect(fetchSpy).toHaveBeenCalledTimes(4)
   })
 
+  it("retries a transient non-JSON response instead of failing", async () => {
+    let posts = 0
+    const fetchSpy = vi.fn(async (url: string, init?: RequestInit) => {
+      if (init?.method === "POST") {
+        posts += 1
+        if (posts === 1) {
+          return {
+            status: 404,
+            url: String(url),
+            text: async () => "<!DOCTYPE html><html><body>not found</body></html>",
+          }
+        }
+      }
+      return {
+        status: 200,
+        url: String(url),
+        text: async () => JSON.stringify(ok({ events: [] })),
+      }
+    })
+    vi.stubGlobal("fetch", fetchSpy)
+    const { requestAppsScript } = await import("./http")
+    await expect(requestAppsScript("getEvents")).resolves.toEqual(
+      ok({ events: [] })
+    )
+    // warm-up GET + failed POST + re-warm GET + retried POST.
+    expect(fetchSpy).toHaveBeenCalledTimes(4)
+  })
+
   it("sends both credentials on every upstream call", async () => {
     const fetchSpy = mockFetch(() => ok({ events: [] }))
     const { requestAppsScript } = await import("./http")

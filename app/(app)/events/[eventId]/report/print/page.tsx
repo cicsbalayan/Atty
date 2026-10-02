@@ -1,6 +1,6 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getAttendanceCachedFor, getEventCachedFor } from "@/integration/cached"
+import { getAttendanceCachedFor, getEventCachedFor, getOrganizationCachedFor } from "@/integration/cached"
 import { filterAttendance, parseAttendanceFilters } from "@/lib/attendance"
 import { requireAdminPage } from "@/lib/auth/dal"
 import { formatEventDate } from "@/lib/format"
@@ -41,6 +41,16 @@ export default async function PrintReportPage({
   ])
   if (!event) notFound()
   const rows = filterAttendance(attendance, filters)
+
+  // The letterhead identity belongs to the event's organization; events
+  // without one keep the historic SSC identity.
+  const org = event.orgId
+    ? await getOrganizationCachedFor(event.orgId).catch(() => null)
+    : null
+  const orgName = org?.name.trim() ? org.name : "Supreme Student Council Alangilan – Balayan"
+  const orgEmail = org?.email.trim()
+    ? org.email
+    : "sscbalayan@g.batstate-u.edu.ph"
 
   // Compact data cells so a page holds as many rows as possible.
   const cell: React.CSSProperties = {
@@ -91,7 +101,7 @@ export default async function PrintReportPage({
             Tel Nos.: (+63 43) 980-0385 local 6101
           </p>
           <p style={{ fontFamily: TNR, fontSize: "10pt", margin: 0, whiteSpace: "nowrap" }}>
-            E-mail Address: sscbalayan@g.batstate-u.edu.ph | Website Address: http://www.batstate-u.edu.ph
+            E-mail Address: {orgEmail} | Website Address: http://www.batstate-u.edu.ph
           </p>
         </div>
       </div>
@@ -99,7 +109,7 @@ export default async function PrintReportPage({
       <hr style={{ border: 0, borderTop: "4pt solid #000", margin: "6pt 0" }} />
 
       <p style={{ fontFamily: TNR, fontSize: "12pt", fontWeight: "bold", margin: "0 0 6pt 0" }}>
-        Supreme Student Council Alangilan – Balayan
+        {orgName}
       </p>
 
         {/* Event details: centered lines */}
@@ -115,7 +125,10 @@ export default async function PrintReportPage({
             <span style={{ borderBottom: "1pt solid #000", padding: "0 12pt" }}>
               {formatEventDate(event.date)}
             </span>
-            {"  "}| Time: <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>&nbsp;</span>
+            {"  "}| Time:{" "}
+            <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>
+              {event.time || " "}
+            </span>
             {"  "}| Venue:{" "}
             <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>
               {event.location || " "}

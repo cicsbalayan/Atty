@@ -2,7 +2,17 @@ import { CalendarX2 } from "lucide-react"
 import { EventCard } from "@/components/events/EventCard"
 import type { SchoolEvent } from "@/models/event"
 
-export function EventSection({ title, events, empty }: { title: string; events: SchoolEvent[]; empty: string }) {
+export function EventSection({
+  title,
+  events,
+  empty,
+  orgNames,
+}: {
+  title: string
+  events: SchoolEvent[]
+  empty: string
+  orgNames?: Record<string, string>
+}) {
   return (
     <section aria-label={title} className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -15,7 +25,7 @@ export function EventSection({ title, events, empty }: { title: string; events: 
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {events.map((event) => (
-            <EventCard key={event.id} event={event} />
+            <EventCard key={event.id} event={event} orgName={orgNames?.[event.orgId]} />
           ))}
         </div>
       )}

@@ -1,12 +1,12 @@
 import Link from "next/link"
-import { ArrowRight, MapPin } from "lucide-react"
+import { ArrowRight, Building2, Clock, MapPin } from "lucide-react"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatEventDate } from "@/lib/format"
 import type { SchoolEvent } from "@/models/event"
 import { EventStatusBadge } from "./EventStatusBadge"
 
-export function EventCard({ event }: { event: SchoolEvent }) {
+export function EventCard({ event, orgName }: { event: SchoolEvent; orgName?: string }) {
   return (
     <Card className="clay-topglow flex h-full flex-col transition-transform hover:-translate-y-0.5">
       <CardHeader>
@@ -19,9 +19,19 @@ export function EventCard({ event }: { event: SchoolEvent }) {
         <EventStatusBadge status={event.status} />
       </CardHeader>
       <CardContent className="flex-1">
+        {orgName ? (
+          <p className="flex items-center gap-1.5 text-sm font-medium">
+            <Building2 className="size-3.5 shrink-0" aria-hidden /> {orgName}
+          </p>
+        ) : null}
+        {event.time ? (
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Clock className="size-3.5 shrink-0" aria-hidden /> {event.time}
+          </p>
+        ) : null}
         {event.location ? (
           <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MapPin className="size-3.5" aria-hidden /> {event.location}
+            <MapPin className="size-3.5 shrink-0" aria-hidden /> {event.location}
           </p>
         ) : null}
         <div className="mt-auto flex flex-wrap gap-2 pt-2">

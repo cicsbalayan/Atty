@@ -95,6 +95,24 @@ function isApiResult(value: unknown): value is ApiResult<object> {
 }
 
 /**
+ * Transport-level failures worth one more attempt: the Google redirect host
+ * intermittently answers non-JSON error pages (stale echo links, redeploy
+ * propagation, infra hiccups) even while the deployment itself is healthy.
+ * Business errors (a JSON body with success:false) are never retried here.
+ */
+function isTransientUpstreamError(error: unknown): boolean {
+  return (
+    error instanceof AppsScriptError &&
+    (error.code === "UPSTREAM_UNAVAILABLE" ||
+      error.code === "INVALID_RESPONSE")
+  )
+}
+
+function backoff(attempt: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, 300 * (attempt + 1)))
+}
+
+/**
  * Sends an action to the Apps Script Web App and returns the success payload.
  *
  * Works around the one-time 302 redirect that Apps Script issues after each
@@ -141,8 +159,20 @@ export async function requestAppsScript<TPayload extends object>(
 
   const task = (async (): Promise<ApiSuccess<TPayload>> => {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt += 1) {
-      const response = await send(cacheBusted(url), body, action)
-      const payload = parse(response, action)
+      let payload: ApiResult<object>
+      try {
+        const response = await send(cacheBusted(url), body, action)
+        payload = parse(response, action)
+      } catch (error) {
+        if (isTransientUpstreamError(error) && attempt + 1 < MAX_ATTEMPTS) {
+          // The redirect target may be stale; re-resolve it before retrying.
+          resetWarmUp()
+          await ensureWarmedUp(url)
+          await backoff(attempt)
+          continue
+        }
+        throw error
+      }
 
       if (payload.success) {
         const ok = payload as ApiSuccess<TPayload>

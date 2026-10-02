@@ -2,7 +2,7 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import * as React from "react"
 import { ScanLine } from "lucide-react"
-import { getAttendanceCachedFor, getEventCachedFor } from "@/integration/cached"
+import { getAttendanceCachedFor, getEventCachedFor, getOrganizationCachedFor } from "@/integration/cached"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { EventActions } from "@/components/events/EventActions"
@@ -76,6 +76,10 @@ export default async function EventDetailPage({
   // Keep the streaming child alive even if the options fetch fails later.
   void attendanceData.catch(() => [])
 
+  const org = event.orgId
+    ? await getOrganizationCachedFor(event.orgId).catch(() => null)
+    : null
+
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -86,6 +90,11 @@ export default async function EventDetailPage({
               {event.id} · {formatEventDate(event.date)}
               {event.location ? ` · ${event.location}` : ""}
             </p>
+            {org?.name || event.time ? (
+              <p className="mt-1 text-xs text-muted-foreground">
+                {[org?.name, event.time].filter(Boolean).join(" · ")}
+              </p>
+            ) : null}
           </div>
           <EventStatusBadge status={event.status} />
         </CardHeader>
