@@ -1,7 +1,7 @@
 # Organizations Frontend Design Spec
 
 Date: 2026-10-02
-Status: approved in conversation, pending spec review
+Status: approved in conversation 2026-10-02
 Scope: event create form (time + organization picker), organizations list page,
 organization create dialog, sidebar link, client wiring. Frontend only.
 
