@@ -15,8 +15,8 @@ export const metadata: Metadata = {
  * Sits outside the `(app)` route group, so it renders without `AppShell`:
  * no sidebar, no primary nav, just one centred card on the mesh canvas that
  * `body` already paints. Built from the same clay tokens and primitives as
- * the rest of the app — brand mark, `.display` title, `.overline` sub-label,
- * sunken PIN well, indigo pill — so it reads as part of the product.
+ * the rest of the app — brand mark, `.display` title, `.overline` overline,
+ * the eight-cell PIN well, indigo pill — so it reads as part of the product.
  *
  * `next` arrives in the query string, so it goes through the same
  * `safeNext` validation the proxy uses. Without that, `?next=//evil.com`
@@ -31,7 +31,7 @@ export default async function LoginPage({
   const redirectTo = safeNext(next ?? null)
 
   return (
-    <div className="relative flex min-h-svh flex-col items-center justify-center gap-6 px-4 py-10">
+    <div className="relative flex min-h-svh flex-col items-center justify-center gap-5 px-4 py-10">
       {/* Theme control stays reachable here so the Cmd/Ctrl+D hotkey and the
           explicit toggle both work before signing in. */}
       <div className="absolute top-4 right-4">
@@ -48,12 +48,7 @@ export default async function LoginPage({
         </span>
       </div>
 
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="display">Admin sign-in</h1>
-        <p className="text-sm text-muted-foreground">
-          Enter the staff PIN to manage events and take attendance.
-        </p>
-      </div>
+      <h1 className="display text-center">Sign in</h1>
 
       <LoginForm redirectTo={redirectTo} />
     </div>
