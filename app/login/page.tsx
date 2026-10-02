@@ -48,7 +48,6 @@ export default async function LoginPage({
         </span>
       </div>
 
-      <h1 className="display text-center">Sign in</h1>
 
       <LoginForm redirectTo={redirectTo} />
     </div>
