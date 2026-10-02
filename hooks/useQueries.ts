@@ -1,7 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { getEvent, listAttendance, listEvents, getReport } from "@/lib/api-client"
+import {
+  getEvent,
+  listAttendance,
+  listEvents,
+  getReport,
+  listOrganizations,
+} from "@/lib/api-client"
 import type { AttendanceFilters } from "@/lib/attendance"
 import { invalidatePrefix, useCached } from "./useCached"
 
@@ -10,6 +16,16 @@ export function useEvents() {
   const refresh = React.useCallback(() => {
     invalidatePrefix("events:")
     invalidatePrefix("dashboard:")
+    result.refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result.refresh])
+  return { ...result, refresh }
+}
+
+export function useOrganizations() {
+  const result = useCached("organizations:all", listOrganizations, 30_000)
+  const refresh = React.useCallback(() => {
+    invalidatePrefix("organizations:")
     result.refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result.refresh])
@@ -31,7 +47,10 @@ export function useEvent(eventId: string | null) {
   return { ...result, refresh }
 }
 
-export function useAttendance(eventId: string | null, filters?: AttendanceFilters) {
+export function useAttendance(
+  eventId: string | null,
+  filters?: AttendanceFilters
+) {
   const key = eventId
     ? `attendance:${eventId}:${JSON.stringify(filters ?? {})}`
     : null
