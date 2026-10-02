@@ -2,12 +2,13 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { CalendarDays, Home } from "lucide-react"
+import { Building2, CalendarDays, Home } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 const links = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/events", label: "Events", icon: CalendarDays },
+  { href: "/organizations", label: "Organizations", icon: Building2 },
 ]
 
 export function SideNav() {
@@ -15,7 +16,8 @@ export function SideNav() {
   return (
     <nav aria-label="Primary" className="flex flex-col gap-2">
       {links.map(({ href, label, icon: Icon }) => {
-        const active = href === "/" ? pathname === "/" : pathname.startsWith(href)
+        const active =
+          href === "/" ? pathname === "/" : pathname.startsWith(href)
         return (
           <Link
             key={href}
