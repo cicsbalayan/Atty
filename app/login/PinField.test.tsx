@@ -78,10 +78,10 @@ describe("PinField", () => {
     )
   })
 
-  it("draws no ring before focus lands", () => {
+  it("draws no indicator before focus lands", () => {
     // `LoginForm` autofocuses in an effect, so the very first render happens
-    // before the field has focus. A ring drawn there would be a focus
-    // indicator on a field that is not focused.
+    // before the field has focus. An indicator drawn there would mark a field
+    // that is not focused.
     const view = render(
       <PinField value="123" onChange={() => {}} inputRef={ref()} />
     )
@@ -109,6 +109,55 @@ describe("PinField", () => {
         view.getByTestId(`pin-cell-${i}`).getAttribute("data-active")
       ).toBe("false")
     }
+  })
+
+  it("keeps the last cell marked once the PIN is complete", () => {
+    // The field is still focused with eight digits in it, so WCAG 2.4.7
+    // requires a visible indicator. Clamping to the final cell is what keeps
+    // one: `value.length` runs one past the end of the grid, and an index
+    // that matches no cell draws nothing at all.
+    const view = render(
+      <PinField value="12345678" onChange={() => {}} inputRef={ref()} />
+    )
+    fireEvent.focus(screen.getByLabelText("PIN"))
+    expect(view.getByTestId("pin-cell-7").getAttribute("data-active")).toBe(
+      "true"
+    )
+    const marked = screen
+      .getAllByTestId(/^pin-cell-/)
+      .filter((cell) => cell.getAttribute("data-active") === "true")
+    expect(marked).toHaveLength(1)
+  })
+
+  it("draws the active indicator with an outline, not a ring", () => {
+    const view = render(
+      <PinField value="1" onChange={() => {}} inputRef={ref()} />
+    )
+    fireEvent.focus(screen.getByLabelText("PIN"))
+    const active = view.getByTestId("pin-cell-1")
+    // A ring is a `box-shadow`, and Tailwind puts utilities after components,
+    // so `ring-*` silently overwrites `.clay-input`'s inset shadow and the
+    // focused cell stops looking sunken. `outline` is a separate property and
+    // leaves the well intact.
+    expect(active.className).toMatch(/\boutline-/)
+    expect(active.className).not.toMatch(/\bring-/)
+    // Only the active cell is decorated.
+    expect(view.getByTestId("pin-cell-0").className).not.toMatch(/\boutline-/)
+    expect(view.getByTestId("pin-cell-2").className).not.toMatch(/\boutline-/)
+  })
+
+  it("offsets the indicator into the gap between cells", () => {
+    const view = render(
+      <PinField value="1" onChange={() => {}} inputRef={ref()} />
+    )
+    fireEvent.focus(screen.getByLabelText("PIN"))
+    // `gap-2` is 8px, so a 2px outline centred in it needs a 3px offset to
+    // clear the cell on both sides. Asserted against the gap so the two
+    // cannot drift apart unnoticed.
+    expect(view.getByTestId("pin-cells").className).toContain("gap-2")
+    expect(view.getByTestId("pin-cell-1").className).toMatch(
+      /\boutline-offset-/
+    )
   })
 
   it("points aria-describedby at the error only while invalid", () => {

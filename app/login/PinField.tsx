@@ -6,9 +6,16 @@
  * one tab stop, native paste, native numeric keypad, one screen-reader
  * announcement -- while looking like eight separate boxes.
  *
- * The active cell's ring is therefore the entire focus indicator, since the
- * input's own outline is invisible. It must stay legible against its
- * neighbours in both themes.
+ * The active cell's outline is therefore the entire focus indicator, since
+ * the input's own outline is invisible. It must stay legible against its
+ * neighbours in both themes, and it must be there at all times the field
+ * holds focus -- including once the PIN is complete and there is no next
+ * cell left to mark.
+ *
+ * `outline`, not `ring`: a ring is a `box-shadow`, and Tailwind orders
+ * utilities after components, so it silently overwrites the `.clay-input`
+ * inset and the focused cell stops reading as a sunken well like its seven
+ * neighbours. `outline` is a separate property and leaves the well intact.
  *
  * `inputMode="numeric"` rather than `type="number"` on purpose. A number input
  * silently discards a leading zero, and `Number("04812075")` is `4812075` --
@@ -46,11 +53,15 @@ export function PinField({
   inputRef: React.RefObject<HTMLInputElement | null>
 }) {
   // Starts false: `LoginForm` autofocuses in an effect, and a programmatic
-  // `.focus()` fires a real focus event, so the ring appears on its own once
-  // focus genuinely lands. An optimistic `true` would draw a focus ring on a
-  // field that does not have focus.
+  // `.focus()` fires a real focus event, so the indicator appears on its own
+  // once focus genuinely lands. An optimistic `true` would mark a field that
+  // does not have focus.
   const [focused, setFocused] = React.useState(false)
-  const activeIndex = value.length
+  // Clamped, because a raw `value.length` runs one past the end of the grid
+  // once the PIN is complete. An index that matches no cell draws nothing,
+  // which would leave a focused field with no focus indicator at all
+  // (WCAG 2.4.7). The last cell stays marked instead.
+  const activeIndex = Math.min(value.length, PIN_LENGTH - 1)
 
   return (
     <div className="flex flex-col gap-2">
@@ -72,7 +83,11 @@ export function PinField({
                 data-active={active ? "true" : "false"}
                 className={cn(
                   "clay-input flex h-14 items-center justify-center",
-                  active && "ring-2 ring-primary"
+                  // `gap-2` leaves 8px between cells, so a 2px outline at a
+                  // 3px offset is centred in that gap and never touches a
+                  // neighbour. Matches how `.clay-btn:focus-visible` marks
+                  // focus elsewhere in the app.
+                  active && "outline-2 outline-offset-3 outline-primary"
                 )}
               >
                 {filled ? (
