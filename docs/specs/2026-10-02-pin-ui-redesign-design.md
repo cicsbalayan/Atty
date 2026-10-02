@@ -202,7 +202,7 @@ enabled default button. It is kept as defence in depth.
 | Decorative icons hidden | `aria-hidden` on `TriangleAlert` |
 | Tab order | Theme toggle, PIN, Sign in. Unchanged. |
 | Motion | No transition on the ring, so no reduced-motion guard is needed |
-| Colour themes | Everything resolves through tokens (`.clay-input`, `.clay-pressed`, `ring-primary`, `--clay-heading`); no new colour literals |
+| Colour themes | Everything resolves through tokens (`.clay-input`, `.clay-pressed`, `outline-primary` for the indicator, `--clay-heading` for the dot); no new colour literals |
 
 Focus order note: the theme toggle is the first element in the DOM, so keyboard
 users reach it before the PIN. That is existing behaviour and is not changed.
