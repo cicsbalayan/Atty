@@ -213,7 +213,9 @@ constraint change and is out of scope here.
      org; time accepts `"8:00 am - 5:00 pm"`.
   3. Submit with no organization selected: refused with a visible message, no
      request fires.
-  4. Create the event: it stores both values (visible on the event detail or
-     in the sheet).
+  4. Create the event: confirm the POST body carries both values and that a
+     subsequent `GET /api/events` shows them on the event. (No screen renders
+     them yet -- that belongs to the deferred detail-page work, so verify at
+     the contract level, not visually.)
   5. With zero organizations, the event form shows the prompt linking to
      Organizations and its submit is disabled.
