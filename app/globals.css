@@ -566,10 +566,15 @@
   max-width: none;
 }
 /* The print footer never renders on screen: each sheet already carries its
-   own in-flow footer above. In print, `position: fixed` computes display to
-   block, so this `none` only ever applies outside print. */
-.report-footer {
-  display: none;
+   own in-flow footer above. Scoped to `@media screen` on purpose -- a base
+   `display: none` here would win over the print block below (CSS 2.1 section
+   9.7 keeps `display: none` even under `position: fixed`), hiding the footer
+   on paper too. With screen-only hiding, print sees no display declaration
+   at all and the fixed box renders normally. */
+@media screen {
+  .report-footer {
+    display: none;
+  }
 }
 
 /* ---- Official report printing (UNLAYERED) ----

@@ -300,7 +300,11 @@ export function PaginatedReport({
             </table>
           </div>
           {/* Screen footer: in-flow at the bottom band of every sheet.
-              Hidden in print, where the pinned .report-footer takes over. */}
+              Hidden in print, where the pinned .report-footer takes over.
+              NOTE: no `display` key here on purpose -- this element must stay
+              hideable by the print stylesheet, and any inline display value
+              would override that hiding. Centering comes from text-align in
+              the full-width block. */}
           <p
             className="report-footer-screen"
             style={{
@@ -309,8 +313,6 @@ export function PaginatedReport({
               fontWeight: "bold",
               fontStyle: "italic",
               color: ACCENT,
-              display: "flex",
-              justifyContent: "center",
               textAlign: "center",
               margin: 0,
             }}
