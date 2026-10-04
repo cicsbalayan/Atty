@@ -3,17 +3,12 @@ import { notFound } from "next/navigation"
 import { getAttendanceCachedFor, getEventCachedFor, getOrganizationCachedFor } from "@/integration/cached"
 import { filterAttendance, parseAttendanceFilters } from "@/lib/attendance"
 import { requireAdminPage } from "@/lib/auth/dal"
-import { formatEventDate } from "@/lib/format"
+import { PaginatedReport } from "@/components/reports/PaginatedReport"
 import { PrintButton } from "@/components/reports/PrintButton"
 
 export const dynamic = "force-dynamic"
 
 export const metadata = { title: "Attendance Report" }
-
-const TNR = '"Times New Roman", Times, serif'
-const ARIAL = "Arial, Helvetica, sans-serif"
-const GOTHIC = '"Century Gothic", Futura, "Trebuchet MS", sans-serif'
-const ACCENT = "#D2363B"
 
 export default async function PrintReportPage({
   params,
@@ -52,119 +47,22 @@ export default async function PrintReportPage({
     ? org.email
     : "sscbalayan@g.batstate-u.edu.ph"
 
-  // Compact data cells so a page holds as many rows as possible.
-  const cell: React.CSSProperties = {
-    border: "1pt solid #000",
-    padding: "3pt 6pt",
-    fontFamily: TNR,
-    fontSize: "10pt",
-  }
-  const bare: React.CSSProperties = { border: 0, padding: 0 }
-
-  // The letterhead, event block, and column headers live inside thead, so
-  // every printed page repeats them in-flow. The footer is a fixed sibling
-  // after the table, pinned to the sheet's bottom edge by `@media print`
-  // inside the reserved bottom margin band; see the `.report-footer` rule
-  // in `globals.css`.
-  const letterhead = (
-    <div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: "14pt",
-          lineHeight: 1.15,
-        }}
-      >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/bsu-tneu-logo.png"
-          alt="BatStateU TNEU logo"
-          style={{ height: "92px", width: "auto", flexShrink: 0 }}
-        />
-        <div style={{ textAlign: "center" }}>
-          <p style={{ fontFamily: TNR, fontSize: "12pt", fontWeight: "bold", margin: 0 }}>
-            Republic of the Philippines
-          </p>
-          <p style={{ fontFamily: TNR, fontSize: "16pt", fontWeight: "bold", margin: 0 }}>
-            BATANGAS STATE UNIVERSITY
-          </p>
-          <p style={{ fontFamily: ARIAL, fontSize: "12pt", fontWeight: "bold", color: ACCENT, margin: 0 }}>
-            The National Engineering University
-          </p>
-          <p style={{ fontFamily: TNR, fontSize: "12pt", fontWeight: "bold", margin: 0 }}>
-            Balayan Campus
-          </p>
-          <p style={{ fontFamily: TNR, fontSize: "10pt", fontWeight: "bold", margin: 0 }}>
-            Caloocan, Balayan, Batangas, Philippines 4213
-          </p>
-          <p style={{ fontFamily: TNR, fontSize: "10pt", margin: 0 }}>
-            Tel Nos.: (+63 43) 980-0385 local 6101
-          </p>
-          <p style={{ fontFamily: TNR, fontSize: "10pt", margin: 0, whiteSpace: "nowrap" }}>
-            E-mail Address: {orgEmail} | Website Address: http://www.batstate-u.edu.ph
-          </p>
-        </div>
-      </div>
-
-      <hr style={{ border: 0, borderTop: "4pt solid #000", margin: "6pt 0" }} />
-
-      <p style={{ fontFamily: TNR, fontSize: "12pt", fontWeight: "bold", margin: "0 0 6pt 0" }}>
-        {orgName}
-      </p>
-
-      {/* Event details.
-          The Date/Time/Venue row is a flex line, not inline text: flex items
-          never break onto a second row, so the venue stays beside the date
-          instead of being orphaned by whitespace line-breaking. Items also
-          refuse to shrink, so a long venue widens the row rather than being
-          clipped or overlapped. */}
-      {/* Event line is centered by the flex wrapper itself (the line as a
-          whole is centered), with text-align kept as a second guarantee. */}
-      <div style={{ display: "flex", justifyContent: "center", marginBottom: "8pt" }}>
-        <p style={{ fontFamily: TNR, fontSize: "11pt", margin: 0, textAlign: "center" }}>
-          Event:{" "}
-          <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>
-            <strong>{event.name}</strong>
-          </span>
-        </p>
-        <div
-          style={{
-            display: "flex",
-            flexWrap: "nowrap",
-            justifyContent: "center",
-            alignItems: "baseline",
-            gap: "4pt",
-            fontFamily: TNR,
-            fontSize: "11pt",
-          }}
-        >
-          <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-            Date:{" "}
-            <span style={{ borderBottom: "1pt solid #000", padding: "0 12pt" }}>
-              {formatEventDate(event.date)}
-            </span>
-          </span>
-          <span style={{ flexShrink: 0 }}>|</span>
-          <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-            Time:{" "}
-            <span style={{ borderBottom: "1pt solid #000", padding: "0 12pt" }}>
-              {event.time || " "}
-            </span>
-          </span>
-          <span style={{ flexShrink: 0 }}>|</span>
-          <span style={{ whiteSpace: "nowrap", flexShrink: 0 }}>
-            Venue:{" "}
-            <span style={{ borderBottom: "1pt solid #000", padding: "0 12pt" }}>
-              {event.location || " "}
-            </span>
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-
+  // Pagination needs live layout metrics, which only the browser has, so the
+  // document itself renders client-side from plain data props. Everything
+  // above this line stays server-side: the gate, the reads, and the filter.
+  // The key remounts the paginator whenever its inputs change; measured chunk
+  // indices from old rows must never address a new array, and a remount
+  // restarts measurement from a clean single sheet.
+  const signature = JSON.stringify([
+    event.id,
+    event.name,
+    event.date,
+    event.time,
+    event.location,
+    orgName,
+    orgEmail,
+    rows.map((r) => `${r.srcode}-${r.timestamp}`),
+  ])
   return (
     <div className="flex flex-col gap-4">
       <div className="no-print flex flex-wrap items-center justify-between gap-2">
@@ -177,85 +75,24 @@ export default async function PrintReportPage({
         <PrintButton />
       </div>
 
-      <article style={{ background: "#fff", color: "#000" }}>
-        <table className="print-table" style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-          <colgroup>
-            <col style={{ width: "12%" }} />
-            <col style={{ width: "30%" }} />
-            <col style={{ width: "14%" }} />
-            <col style={{ width: "44%" }} />
-          </colgroup>
-          <thead>
-            <tr>
-              <td colSpan={4} style={bare}>
-                {letterhead}
-              </td>
-            </tr>
-            <tr>
-              {["SR-CODE", "FULL NAME", "YEAR", "PROGRAM"].map((h) => (
-                <th
-                  key={h}
-                  style={{
-                    ...cell,
-                    fontSize: "10pt",
-                    fontWeight: "bold",
-                    textTransform: "uppercase",
-                    background: "#fff",
-                  }}
-                >
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={4} style={{ ...cell, textAlign: "center" }}>
-                  No attendance records.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => (
-                <tr key={`${r.srcode}-${r.timestamp}`}>
-                  <td style={cell}>{r.srcode}</td>
-                  <td style={cell}>{r.name}</td>
-                  <td style={cell}>{r.yearLevel}</td>
-                  <td style={cell}>{r.program}</td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-
-        {/* Pinned footer: out of flow, so pagination can never break it onto
-            another sheet. `@media print` pins it to the sheet's bottom edge,
-            inside the reserved bottom margin band where rows cannot reach. */}
-        <p
-          className="report-footer"
-          style={{
-            fontFamily: GOTHIC,
-            fontSize: "12pt",
-            fontWeight: "bold",
-            fontStyle: "italic",
-            color: ACCENT,
-            // Centered three ways at once: the fixed box spans the full sheet
-            // width (left/right 0 in print CSS), flex centers the line inside
-            // it, and the shrink-wrapped box centers itself with auto margins
-            // -- so neither text-align quirks nor box-width surprises can
-            // leave it off-center.
-            display: "flex",
-            justifyContent: "center",
-            width: "fit-content",
-            marginInline: "auto",
-            textAlign: "center",
-            marginTop: 0,
-            marginBottom: 0,
-          }}
-        >
-          Leading Innovations, Transforming Lives, Building the Nation
-        </p>
-      </article>
+      <PaginatedReport
+        key={signature}
+        eventMeta={{
+          name: event.name,
+          date: event.date,
+          time: event.time,
+          location: event.location,
+        }}
+        orgName={orgName}
+        orgEmail={orgEmail}
+        rows={rows.map((r) => ({
+          key: `${r.srcode}-${r.timestamp}`,
+          srcode: r.srcode,
+          name: r.name,
+          yearLevel: r.yearLevel,
+          program: r.program,
+        }))}
+      />
     </div>
   )
 }

@@ -523,6 +523,43 @@
   margin-inline: auto;
 }
 
+/* ---- Report paper sheet (screen preview, UNLAYERED) ----
+   The on-screen preview renders the document at true legal-landscape size:
+   14in wide = 1344px, with 1.27cm (= 0.5in = 48px) of paper margin as
+   padding, so content width on screen (1344 - 96 = 1248px) is exactly the
+   printable width and wrapping matches the printed page. In print this
+   collapses: the @page margins below provide the margins instead, so the
+   padding must be zeroed there to avoid doubling them. */
+.print-sheet {
+  width: 100%;
+  max-width: 1344px;
+  /* Strict legal sheet: exactly one landscape page tall (8.5in = 816px) no
+     matter how little content the table holds. Overflow rows never stretch
+     this box; the paginator flows them onto additional sheets instead. */
+  height: 816px;
+  margin-inline: auto;
+  padding: 1.27cm;
+  background: #fff;
+  color: #000;
+  box-shadow: 0 8px 32px rgb(15 23 42 / 0.12);
+}
+/* Fixed content box inside the sheet: 816 - 48 (top margin) - 91 (2.4cm
+   bottom band) = 677. The footer below it always lands in the band. */
+.print-sheet-body {
+  height: 677px;
+}
+/* Screen-only footer, one per sheet, in flow. Hidden in print, where the
+   pinned .report-footer takes over at the sheet edge. */
+.report-footer-screen {
+  display: block;
+}
+/* The print footer never renders on screen: each sheet already carries its
+   own in-flow footer above. In print, `position: fixed` computes display to
+   block, so this `none` only ever applies outside print. */
+.report-footer {
+  display: none;
+}
+
 /* ---- Official report printing (UNLAYERED) ----
    Legal landscape, 1.27cm narrow margins (2.4cm bottom band reserved for the
    pinned footer), app chrome hidden. */
@@ -549,6 +586,21 @@
     display: block !important;
     min-height: auto !important;
     padding: 0 !important;
+  }
+  /* Screen paper presentation collapses in print: the @page margins own the
+     margins now, and the sheet must not constrain or shadow the output. */
+  .print-sheet {
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .print-sheet-body {
+    height: auto;
+  }
+  .report-footer-screen {
+    display: none;
   }
   .print-table thead {
     display: table-header-group;
