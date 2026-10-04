@@ -524,7 +524,8 @@
 }
 
 /* ---- Official report printing (UNLAYERED) ----
-   Legal landscape, 1.27cm narrow margins, app chrome hidden. */
+   Legal landscape, 1.27cm narrow margins (2.4cm bottom band reserved for the
+   pinned footer), app chrome hidden. */
 @media print {
   @page {
     size: legal landscape;
@@ -552,15 +553,17 @@
   .print-table thead {
     display: table-header-group;
   }
-  /* Pinned footer. `position: fixed` keeps it out of the document flow, so
-     pagination can never break it onto a sheet of its own, and the repeating
-     header keeps every page visually identical. The negative offset seats it
-     inside the reserved 2.4cm bottom band rather than within a few
-     millimetres of the sheet edge, where it used to fall into the printer's
-     non-printable area and get pushed onto an extra page. */
+  /* Pinned footer. `position: fixed` repeats it on every printed page while
+     keeping it out of the document flow, so pagination can never break it
+     onto a sheet of its own. `bottom: 0` seats its bottom edge exactly on the
+     sheet's bottom edge -- inside the reserved 2.4cm bottom band, roughly 2cm
+     clear of where table content can reach (content stops at the content-box
+     edge). A negative offset must never be used here: it pushes the footer
+     below the sheet, and Chrome then paints it overlapping the table instead
+     of in the margin. */
   .report-footer {
     position: fixed;
-    bottom: -1.15cm;
+    bottom: 0;
     left: 0;
     right: 0;
     text-align: center;

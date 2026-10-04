@@ -63,8 +63,9 @@ export default async function PrintReportPage({
 
   // The letterhead, event block, and column headers live inside thead, so
   // every printed page repeats them in-flow. The footer is a fixed sibling
-  // after the table, anchored into the reserved bottom margin band by
-  // `@media print`; see the `.report-footer` rule in `globals.css`.
+  // after the table, pinned to the sheet's bottom edge by `@media print`
+  // inside the reserved bottom margin band; see the `.report-footer` rule
+  // in `globals.css`.
   const letterhead = (
     <div>
       <div
@@ -119,7 +120,9 @@ export default async function PrintReportPage({
           instead of being orphaned by whitespace line-breaking. Items also
           refuse to shrink, so a long venue widens the row rather than being
           clipped or overlapped. */}
-      <div style={{ marginBottom: "8pt" }}>
+      {/* Event line is centered by the flex wrapper itself (the line as a
+          whole is centered), with text-align kept as a second guarantee. */}
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "8pt" }}>
         <p style={{ fontFamily: TNR, fontSize: "11pt", margin: 0, textAlign: "center" }}>
           Event:{" "}
           <span style={{ borderBottom: "1pt solid #000", padding: "0 24pt" }}>
@@ -226,7 +229,8 @@ export default async function PrintReportPage({
         </table>
 
         {/* Pinned footer: out of flow, so pagination can never break it onto
-            another sheet. `@media print` anchors it in the bottom margin band. */}
+            another sheet. `@media print` pins it to the sheet's bottom edge,
+            inside the reserved bottom margin band where rows cannot reach. */}
         <p
           className="report-footer"
           style={{
@@ -235,8 +239,18 @@ export default async function PrintReportPage({
             fontWeight: "bold",
             fontStyle: "italic",
             color: ACCENT,
+            // Centered three ways at once: the fixed box spans the full sheet
+            // width (left/right 0 in print CSS), flex centers the line inside
+            // it, and the shrink-wrapped box centers itself with auto margins
+            // -- so neither text-align quirks nor box-width surprises can
+            // leave it off-center.
+            display: "flex",
+            justifyContent: "center",
+            width: "fit-content",
+            marginInline: "auto",
             textAlign: "center",
-            margin: 0,
+            marginTop: 0,
+            marginBottom: 0,
           }}
         >
           Leading Innovations, Transforming Lives, Building the Nation
