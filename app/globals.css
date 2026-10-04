@@ -557,6 +557,14 @@
 .report-footer-screen {
   display: block;
 }
+/* Footers are layout boxes, not prose: exempt both from the global
+   `p { max-width: 65ch }` readability rule, which would otherwise clamp them
+   to ~582px inside the 1248px sheet and strand them left of center. Placed
+   here, unlayered, so it beats the layered base rule with no !important. */
+.report-footer-screen,
+.report-footer {
+  max-width: none;
+}
 /* The print footer never renders on screen: each sheet already carries its
    own in-flow footer above. In print, `position: fixed` computes display to
    block, so this `none` only ever applies outside print. */
