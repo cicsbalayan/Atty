@@ -52,6 +52,20 @@ export function paginateRows(rowHeights: number[], capacity: number): number[][]
   return chunks
 }
 
+/**
+ * Usable row space on one sheet: the content box minus a rounding slack,
+ * minus the repeated header, minus one full data row. That last reserve is
+ * deliberate -- every full page always ends at least one row-height above
+ * the footer band, so the footer can never touch table content no matter
+ * how rows wrapped or how a print driver scales the sheet. The reserve is
+ * the tallest measured row rather than a fixed guess, so a table of wrapped
+ * two-line rows reserves two-line room.
+ */
+export function pageCapacity(headerHeight: number, rowHeights: number[]): number {
+  const tallest = rowHeights.length ? Math.max(...rowHeights) : 0
+  return SHEET_CONTENT_HEIGHT_PX - PAGINATION_SLACK_PX - headerHeight - tallest
+}
+
 const cell: React.CSSProperties = {
   border: "1pt solid #000",
   padding: "3pt 6pt",
@@ -215,9 +229,7 @@ export function PaginatedReport({
       const headerHeight =
         (letterheadRef.current?.offsetHeight ?? 0) + (colHeadRef.current?.offsetHeight ?? 0)
       const heights = rows.map((_, i) => rowEls.current.get(i)?.offsetHeight ?? 0)
-      setChunks(
-        paginateRows(heights, SHEET_CONTENT_HEIGHT_PX - PAGINATION_SLACK_PX - headerHeight)
-      )
+      setChunks(paginateRows(heights, pageCapacity(headerHeight, heights)))
     }
     void measure()
     return () => {

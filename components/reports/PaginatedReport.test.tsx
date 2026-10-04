@@ -4,7 +4,7 @@
 import { cleanup, render, screen } from "@testing-library/react"
 import * as React from "react"
 import { afterEach, describe, expect, it } from "vitest"
-import { PaginatedReport, paginateRows } from "./PaginatedReport"
+import { PaginatedReport, paginateRows, pageCapacity } from "./PaginatedReport"
 import type { ReportRow } from "./PaginatedReport"
 
 afterEach(cleanup)
@@ -43,6 +43,21 @@ describe("paginateRows", () => {
       [2, 3],
       [4],
     ])
+  })
+})
+
+describe("pageCapacity", () => {
+  it("reserves one full row below the header, not just rounding slack", () => {
+    // Content 677, slack 4, header 100, uniform 30px rows: 677 - 4 - 100 - 30.
+    expect(pageCapacity(100, [30, 30, 30])).toBe(543)
+  })
+
+  it("reserves the tallest row when rows wrapped unevenly", () => {
+    expect(pageCapacity(100, [30, 60, 30])).toBe(513)
+  })
+
+  it("reserves nothing extra when the table is empty", () => {
+    expect(pageCapacity(100, [])).toBe(573)
   })
 })
 
