@@ -53,17 +53,24 @@ export function paginateRows(rowHeights: number[], capacity: number): number[][]
 }
 
 /**
+ * Height of the in-flow spacer rendered after every chunk's rows (see
+ * below). Roughly one data row: the spacer, not just arithmetic, is what
+ * guarantees clearance, because it physically occupies the space.
+ */
+export const SPACER_HEIGHT_PX = 32
+
+/**
  * Usable row space on one sheet: the content box minus a rounding slack,
- * minus the repeated header, minus one full data row. That last reserve is
- * deliberate -- every full page always ends at least one row-height above
- * the footer band, so the footer can never touch table content no matter
- * how rows wrapped or how a print driver scales the sheet. The reserve is
- * the tallest measured row rather than a fixed guess, so a table of wrapped
- * two-line rows reserves two-line room.
+ * minus the repeated header, minus one full data row, minus the spacer that
+ * will actually occupy that room. The row reserve is deliberate -- every
+ * full page always ends at least one row-height above the footer band, so
+ * the footer can never touch table content no matter how rows wrapped. The
+ * reserve is the tallest measured row rather than a fixed guess, so a table
+ * of wrapped two-line rows reserves two-line room.
  */
 export function pageCapacity(headerHeight: number, rowHeights: number[]): number {
   const tallest = rowHeights.length ? Math.max(...rowHeights) : 0
-  return SHEET_CONTENT_HEIGHT_PX - PAGINATION_SLACK_PX - headerHeight - tallest
+  return SHEET_CONTENT_HEIGHT_PX - PAGINATION_SLACK_PX - headerHeight - tallest - SPACER_HEIGHT_PX
 }
 
 const cell: React.CSSProperties = {
@@ -306,6 +313,13 @@ export function PaginatedReport({
                 )}
               </tbody>
             </table>
+            {/* Clearance spacer: empty, in-flow, glued to the rows above by
+                break-before avoid. Whatever fills a page to the brim, the
+                fixed footer lands on this empty strip instead of on text --
+                including under zero dialog margins, where no margin band
+                exists to protect the footer. Rendered on screen too, so the
+                measured chunk math already accounts for its height. */}
+            <div className="print-spacer" />
           </div>
           {/* Screen footer: in-flow at the bottom band of every sheet.
               Hidden in print, where the pinned .report-footer takes over.

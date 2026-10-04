@@ -47,17 +47,17 @@ describe("paginateRows", () => {
 })
 
 describe("pageCapacity", () => {
-  it("reserves one full row below the header, not just rounding slack", () => {
-    // Content 677, slack 4, header 100, uniform 30px rows: 677 - 4 - 100 - 30.
-    expect(pageCapacity(100, [30, 30, 30])).toBe(543)
+  it("reserves one full row plus the spacer below the header", () => {
+    // Content 677, slack 4, header 100, uniform 30px rows, 32px spacer.
+    expect(pageCapacity(100, [30, 30, 30])).toBe(511)
   })
 
   it("reserves the tallest row when rows wrapped unevenly", () => {
-    expect(pageCapacity(100, [30, 60, 30])).toBe(513)
+    expect(pageCapacity(100, [30, 60, 30])).toBe(481)
   })
 
-  it("reserves nothing extra when the table is empty", () => {
-    expect(pageCapacity(100, [])).toBe(573)
+  it("still reserves the spacer when the table is empty", () => {
+    expect(pageCapacity(100, [])).toBe(541)
   })
 })
 
@@ -86,6 +86,8 @@ describe("PaginatedReport", () => {
     expect(
       container.querySelector(".report-footer")?.textContent?.includes("Leading Innovations")
     ).toBe(true)
+    // One clearance spacer per rendered sheet.
+    expect(container.querySelectorAll(".print-spacer")).toHaveLength(1)
   })
 
   it("renders the empty state when there are no rows", () => {

@@ -552,6 +552,14 @@
 .print-sheet-body {
   height: 677px;
 }
+/* In-flow footer clearance, one per chunk, screen and print alike (so the
+   measured heights already include it). Empty and invisible; its only job is
+   occupying the strip the fixed footer paints over. break-before avoid keeps
+   it glued to its rows so it can never strand alone atop a page. */
+.print-spacer {
+  height: 32px;
+  break-before: avoid;
+}
 /* Screen-only footer, one per sheet, in flow. Hidden in print, where the
    pinned .report-footer takes over at the sheet edge. */
 .report-footer-screen {
