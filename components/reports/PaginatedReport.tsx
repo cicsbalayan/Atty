@@ -234,7 +234,10 @@ export function PaginatedReport({
         <article
           key={page}
           className="print-sheet"
-          style={{ breakAfter: page === view.length - 1 ? "auto" : "page" }}
+          // Non-last chunks force a page break in landscape print (see CSS).
+          // A data attribute rather than an inline break-after so the print
+          // stylesheet can lift the forcing where it does not apply.
+          data-last={page === view.length - 1 ? "true" : "false"}
         >
           <div className="print-sheet-body">
             <ReportLetterhead

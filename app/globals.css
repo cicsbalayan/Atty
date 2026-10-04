@@ -619,6 +619,22 @@
   .print-sheet-body {
     height: auto;
   }
+  /* Chunk breaks are landscape-geometry: chunks were measured and packed
+     for a 1248px-wide, 677px-tall content box. Forcing those breaks anywhere
+     else strands half-empty pages. */
+  .print-sheet[data-last="false"] {
+    break-after: page;
+  }
+  /* Portrait callers get natural fragmentation instead: content flows across
+     whatever the portrait content box holds, rows still refuse to split, and
+     the fixed footer still pins every page without ever overlapping rows.
+     Later in source than the rule above at equal specificity, so no
+     !important is needed to lift the forcing. */
+  @media print and (orientation: portrait) {
+    .print-sheet[data-last="false"] {
+      break-after: auto;
+    }
+  }
   .report-footer-screen {
     display: none;
   }
