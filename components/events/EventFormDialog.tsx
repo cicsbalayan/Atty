@@ -24,9 +24,21 @@ export function EventFormDialog() {
   const [error, setError] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
 
-  const { data: orgData, loading: orgsLoading } = useOrganizations()
+  const {
+    data: orgData,
+    loading: orgsLoading,
+    error: orgsError,
+    refresh: refreshOrgs,
+  } = useOrganizations()
   const orgs = orgData?.organizations ?? []
   const [orgId, setOrgId] = React.useState("")
+  const loadFailed = !orgsLoading && orgsError != null
+
+  function close() {
+    setOrgId("")
+    setError(null)
+    setOpen(false)
+  }
 
   async function onSubmit(form: FormData) {
     if (!orgId) {
@@ -46,7 +58,7 @@ export function EventFormDialog() {
       })
       invalidatePrefix("events:")
       invalidatePrefix("dashboard:")
-      setOpen(false)
+      close()
       router.refresh()
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not create event.")
@@ -56,7 +68,16 @@ export function EventFormDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          setOrgId("")
+          setError(null)
+        }
+        setOpen(next)
+      }}
+    >
       <DialogTrigger
         render={
           <Button className="clay-btn clay-btn-primary">
