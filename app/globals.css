@@ -599,6 +599,16 @@
   .app-shell {
     padding: 0 !important;
   }
+  /* Single column in print, always: with the sidebar hidden, the two-track
+     `lg:grid-cols-[240px_1fr]` template can strand `main` in the 240px track
+     whenever the print engine evaluates the `lg:` breakpoint as matching
+     (paper-width dependent, so configuration-dependent). That squeezes the
+     whole report into 240px, fragments every row mid-word, and paginates
+     garbage. One track removes the hazard structurally. Unlayered, so it
+     beats the layered Tailwind variant with no !important. */
+  .app-shell-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   main {
     display: block !important;
     min-height: auto !important;
@@ -619,22 +629,12 @@
   .print-sheet-body {
     height: auto;
   }
-  /* Chunk breaks are landscape-geometry: chunks were measured and packed
-     for a 1248px-wide, 677px-tall content box. Forcing those breaks anywhere
-     else strands half-empty pages. */
-  .print-sheet[data-last="false"] {
-    break-after: page;
-  }
-  /* Portrait callers get natural fragmentation instead: content flows across
-     whatever the portrait content box holds, rows still refuse to split, and
-     the fixed footer still pins every page without ever overlapping rows.
-     Later in source than the rule above at equal specificity, so no
-     !important is needed to lift the forcing. */
-  @media print and (orientation: portrait) {
-    .print-sheet[data-last="false"] {
-      break-after: auto;
-    }
-  }
+  /* No forced breaks anywhere in print: chunks were measured and packed for
+     one specific geometry, so forcing their boundaries under any other paper,
+     orientation, or margin choice strands half-empty pages (and the fixed
+     footer with them). Content flows naturally in every configuration;
+     headers repeat per table, rows refuse to split, and the fixed footer
+     still pins every page without ever overlapping rows. */
   .report-footer-screen {
     display: none;
   }
