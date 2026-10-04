@@ -320,7 +320,11 @@ export function PaginatedReport({
         </article>
       ))}
       {/* Print footer: hidden on screen, pinned to the sheet bottom edge of
-          every printed page by `@media print`. */}
+          every printed page by `@media print`. NOTE: no `display` key here
+          on purpose -- this element carries an inline style, and any inline
+          display value would override the stylesheet's screen-side
+          `display: none`, leaking a duplicate footer onto the preview. In
+          print, `position: fixed` computes display to block on its own. */}
       <p
         className="report-footer"
         style={{
@@ -329,8 +333,6 @@ export function PaginatedReport({
           fontWeight: "bold",
           fontStyle: "italic",
           color: ACCENT,
-          display: "flex",
-          justifyContent: "center",
           width: "fit-content",
           marginInline: "auto",
           textAlign: "center",
