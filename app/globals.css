@@ -531,8 +531,12 @@
    collapses: the @page margins below provide the margins instead, so the
    padding must be zeroed there to avoid doubling them. */
 .print-sheet {
-  width: 100%;
-  max-width: 1344px;
+  /* Fixed legal width, not width:100%: the sheet lives inside the app shell
+     next to the sidebar, so a fluid width would squeeze it to whatever the
+     shell allows (measured 678px on a typical viewport) instead of legal
+     size. Fixed px is viewport-independent; narrower viewports scroll
+     horizontally to it. margin-inline centers it whenever there is room. */
+  width: 1344px;
   /* Strict legal sheet: exactly one landscape page tall (8.5in = 816px) no
      matter how little content the table holds. Overflow rows never stretch
      this box; the paginator flows them onto additional sheets instead. */
@@ -590,6 +594,9 @@
   /* Screen paper presentation collapses in print: the @page margins own the
      margins now, and the sheet must not constrain or shadow the output. */
   .print-sheet {
+    /* width:auto is load-bearing here: the screen width is a fixed 1344px,
+       which would overflow the 1248px printable area if it survived print. */
+    width: auto;
     max-width: none;
     height: auto;
     margin: 0;
