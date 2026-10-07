@@ -14,6 +14,7 @@ import {
 import { Input, Label } from "@/components/ui/input"
 import Link from "next/link"
 import { ApiError, createEvent } from "@/lib/api-client"
+import { formatEventDate } from "@/lib/format"
 import { useOrganizations } from "@/hooks/useQueries"
 import { ClaySelect } from "@/components/ui/select"
 import { invalidatePrefix } from "@/hooks/useCached"
@@ -42,15 +43,28 @@ export function EventFormDialog() {
 
   async function onSubmit(form: FormData) {
     if (!orgId) {
-      setError("Select an organization.")
+      setError("Select an organizer.")
       return
     }
+    // A range serializes into the single backend date string. One date
+    // stays ISO so every existing display keeps working; a range stores
+    // the pretty form, which formatEventDate renders verbatim.
+    const start = String(form.get("dateStart") ?? "")
+    const end = String(form.get("dateEnd") ?? "").trim()
+    if (end && end < start) {
+      setError("End date must be on or after the start date.")
+      return
+    }
+    const date =
+      end && end !== start
+        ? `${formatEventDate(start)} - ${formatEventDate(end)}`
+        : start
     setSaving(true)
     setError(null)
     try {
       await createEvent({
         name: String(form.get("name") ?? ""),
-        date: String(form.get("date") ?? ""),
+        date,
         location: String(form.get("location") ?? ""),
         description: String(form.get("description") ?? ""),
         orgId,
@@ -106,29 +120,33 @@ export function EventFormDialog() {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="date">Event date</Label>
-              <Input id="date" name="date" type="date" required />
+              <Label htmlFor="dateStart">Start date</Label>
+              <Input id="dateStart" name="dateStart" type="date" required />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="location">Location</Label>
-              <Input
-                id="location"
-                name="location"
-                maxLength={150}
-                placeholder="Gym"
-              />
+              <Label htmlFor="dateEnd">End date</Label>
+              <Input id="dateEnd" name="dateEnd" type="date" />
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="org">Organization</Label>
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              name="location"
+              maxLength={150}
+              placeholder="Gym"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="org">Organizer</Label>
             {orgs.length === 0 && !orgsLoading ? (
               <p role="alert" className="text-sm text-destructive">
-                No organizations yet. Add one on the{" "}
+                No organizers yet. Add one on the{" "}
                 <Link
                   href="/organizations"
                   className="underline underline-offset-4"
                 >
-                  Organizations page
+                  Organizers page
                 </Link>{" "}
                 first.
               </p>
@@ -139,9 +157,9 @@ export function EventFormDialog() {
                 onChange={(name) =>
                   setOrgId(orgs.find((o) => o.name === name)?.id ?? "")
                 }
-                placeholder="Select an organization"
+                placeholder="Select an organizer"
                 options={orgs.map((o) => o.name)}
-                allLabel="Select an organization"
+                allLabel="Select an organizer"
               />
             )}
           </div>

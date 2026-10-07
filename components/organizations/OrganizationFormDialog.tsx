@@ -25,7 +25,7 @@ export function OrganizationFormDialog() {
   async function onSubmit(form: FormData) {
     const name = String(form.get("name") ?? "").trim()
     if (!name) {
-      setError("Enter an organization name.")
+      setError("Enter an organizer name.")
       return
     }
     setSaving(true)
@@ -41,7 +41,7 @@ export function OrganizationFormDialog() {
       router.refresh()
     } catch (e) {
       setError(
-        e instanceof ApiError ? e.message : "Could not create organization."
+        e instanceof ApiError ? e.message : "Could not create organizer."
       )
     } finally {
       setSaving(false)
@@ -53,12 +53,12 @@ export function OrganizationFormDialog() {
       <DialogTrigger
         render={
           <Button className="clay-btn clay-btn-primary">
-            <Plus className="size-4" aria-hidden /> New organization
+            <Plus className="size-4" aria-hidden /> New organizer
           </Button>
         }
       />
       <DialogContent>
-        <DialogTitle>Create organization</DialogTitle>
+          <DialogTitle>Create organizer</DialogTitle>
         <DialogDescription>
           The name and email appear on printed attendance reports.
         </DialogDescription>
@@ -67,7 +67,7 @@ export function OrganizationFormDialog() {
           action={(form) => void onSubmit(form)}
         >
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor="org-name">Organization name</Label>
+            <Label htmlFor="org-name">Organizer name</Label>
             <Input
               id="org-name"
               name="name"
@@ -92,7 +92,7 @@ export function OrganizationFormDialog() {
             </p>
           ) : null}
           <Button type="submit" disabled={saving} className="clay-btn mt-1">
-            {saving ? "Creating…" : "Create organization"}
+            {saving ? "Creating…" : "Create organizer"}
           </Button>
         </form>
       </DialogContent>

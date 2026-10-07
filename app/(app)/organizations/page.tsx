@@ -17,14 +17,14 @@ export default async function OrganizationsPage() {
   try {
     organizations = await getOrganizationsCached()
   } catch (e) {
-    error = e instanceof Error ? e.message : "Could not load organizations."
+    error = e instanceof Error ? e.message : "Could not load organizers."
   }
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Organizations</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Organizers</h1>
           <p className="text-sm text-muted-foreground">
             The offices and schools using this tracker.
           </p>
@@ -37,7 +37,7 @@ export default async function OrganizationsPage() {
         </p>
       ) : organizations.length === 0 ? (
         <p className="clay p-4 text-sm text-muted-foreground">
-          No organizations yet. Add the first one.
+          No organizers yet. Add the first one.
         </p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

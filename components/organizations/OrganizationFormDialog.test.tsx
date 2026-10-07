@@ -24,7 +24,7 @@ afterEach(cleanup)
 
 function open() {
   render(<OrganizationFormDialog />)
-  fireEvent.click(screen.getByRole("button", { name: /new organization/i }))
+  fireEvent.click(screen.getByRole("button", { name: /new organizer/i }))
 }
 
 describe("OrganizationFormDialog", () => {
@@ -38,14 +38,14 @@ describe("OrganizationFormDialog", () => {
       },
     })
     open()
-    fireEvent.change(screen.getByLabelText("Organization name"), {
+    fireEvent.change(screen.getByLabelText("Organizer name"), {
       target: { value: "Batangas State University" },
     })
     fireEvent.change(screen.getByLabelText("Email"), {
       target: { value: "sscbalayan@g.batstate-u.edu.ph" },
     })
     fireEvent.click(
-      screen.getByRole("button", { name: /^create organization$/i })
+      screen.getByRole("button", { name: /^create organizer$/i })
     )
     await waitFor(() => {
       expect(createOrganization).toHaveBeenCalledTimes(1)

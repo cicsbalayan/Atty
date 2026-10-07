@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils"
 const links = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/events", label: "Events", icon: CalendarDays },
-  { href: "/organizations", label: "Organizations", icon: Building2 },
+  { href: "/organizations", label: "Organizers", icon: Building2 },
 ]
 
 export function SideNav() {

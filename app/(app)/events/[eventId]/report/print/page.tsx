@@ -4,6 +4,7 @@ import { getAttendanceCachedFor, getEventCachedFor, getOrganizationCachedFor } f
 import { filterAttendance, parseAttendanceFilters } from "@/lib/attendance"
 import { requireAdminPage } from "@/lib/auth/dal"
 import { PaginatedReport } from "@/components/reports/PaginatedReport"
+import { DownloadPdfButton } from "@/components/reports/DownloadPdfButton"
 import { PrintButton } from "@/components/reports/PrintButton"
 
 export const dynamic = "force-dynamic"
@@ -72,7 +73,10 @@ export default async function PrintReportPage({
         >
           ← Back to event
         </Link>
-        <PrintButton />
+        <div className="flex items-center gap-2">
+          <PrintButton />
+          <DownloadPdfButton />
+        </div>
       </div>
 
       <PaginatedReport

@@ -12,6 +12,7 @@ import * as React from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { EventFormDialog } from "./EventFormDialog"
 import { createEvent } from "@/lib/api-client"
+import { formatEventDate } from "@/lib/format"
 import { useOrganizations } from "@/hooks/useQueries"
 import type { SchoolEvent } from "@/models/event"
 
@@ -40,13 +41,13 @@ function fillBasics() {
   fireEvent.change(screen.getByLabelText("Event name"), {
     target: { value: "Freshmen Orientation" },
   })
-  fireEvent.change(screen.getByLabelText("Event date"), {
+  fireEvent.change(screen.getByLabelText("Start date"), {
     target: { value: "2026-11-01" },
   })
 }
 
 async function chooseOrg(name: string) {
-  fireEvent.click(screen.getByRole("combobox", { name: "Organization" }))
+  fireEvent.click(screen.getByRole("combobox", { name: "Organizer" }))
   const option = await screen.findByRole("option", { name })
   fireEvent.pointerDown(option)
   fireEvent.click(option)
@@ -98,6 +99,68 @@ describe("EventFormDialog", () => {
     expect(input.time).toBe("12:00 pm - 5:00 pm")
   })
 
+  it("sends a single start date unchanged", async () => {
+    vi.mocked(createEvent).mockResolvedValue({
+      success: true,
+      event: { id: "EVT-001" } as SchoolEvent,
+    })
+    mockOrgs(orgs)
+    render(<EventFormDialog />)
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }))
+    fillBasics()
+    await chooseOrg("Batangas State University")
+    fireEvent.click(screen.getByRole("button", { name: /^create event$/i }))
+    await waitFor(() => {
+      expect(createEvent).toHaveBeenCalledTimes(1)
+    })
+    const input = vi.mocked(createEvent).mock.calls[0][0] as unknown as Record<
+      string,
+      unknown
+    >
+    expect(input.date).toBe("2026-11-01")
+  })
+
+  it("serializes a start and end date as a range", async () => {
+    vi.mocked(createEvent).mockResolvedValue({
+      success: true,
+      event: { id: "EVT-001" } as SchoolEvent,
+    })
+    mockOrgs(orgs)
+    render(<EventFormDialog />)
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }))
+    fillBasics()
+    await chooseOrg("Batangas State University")
+    fireEvent.change(screen.getByLabelText("End date"), {
+      target: { value: "2026-11-03" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /^create event$/i }))
+    await waitFor(() => {
+      expect(createEvent).toHaveBeenCalledTimes(1)
+    })
+    const input = vi.mocked(createEvent).mock.calls[0][0] as unknown as Record<
+      string,
+      unknown
+    >
+    expect(input.date).toBe(
+      `${formatEventDate("2026-11-01")} - ${formatEventDate("2026-11-03")}`
+    )
+  })
+
+  it("refuses an end date before the start date", async () => {
+    mockOrgs(orgs)
+    render(<EventFormDialog />)
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }))
+    fillBasics()
+    await chooseOrg("Batangas State University")
+    fireEvent.change(screen.getByLabelText("End date"), {
+      target: { value: "2026-10-01" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /^create event$/i }))
+    const alert = await screen.findByRole("alert")
+    expect(alert.textContent).toContain("End date")
+    expect(createEvent).not.toHaveBeenCalled()
+  })
+
   it("refuses to submit with no organization selected", async () => {
     mockOrgs(orgs)
     render(<EventFormDialog />)
@@ -105,7 +168,7 @@ describe("EventFormDialog", () => {
     fillBasics()
     fireEvent.click(screen.getByRole("button", { name: /^create event$/i }))
     const alert = await screen.findByRole("alert")
-    expect(alert.textContent).toContain("organization")
+    expect(alert.textContent).toContain("organizer")
     expect(createEvent).not.toHaveBeenCalled()
   })
 
@@ -125,7 +188,7 @@ describe("EventFormDialog", () => {
           (element.textContent ?? "")
             .replace(/\s+/g, " ")
             .includes(
-              "No organizations yet. Add one on the Organizations page first."
+              "No organizers yet. Add one on the Organizers page first."
             )
       )
     ).toBeTruthy()
