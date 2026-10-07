@@ -14,7 +14,7 @@ import {
 import { Input, Label } from "@/components/ui/input"
 import Link from "next/link"
 import { ApiError, createEvent } from "@/lib/api-client"
-import { formatEventDate } from "@/lib/format"
+import { formatEventDate, formatTimeInput } from "@/lib/format"
 import { useOrganizations } from "@/hooks/useQueries"
 import { ClaySelect } from "@/components/ui/select"
 import { invalidatePrefix } from "@/hooks/useCached"
@@ -59,6 +59,22 @@ export function EventFormDialog() {
       end && end !== start
         ? `${formatEventDate(start)} - ${formatEventDate(end)}`
         : start
+    // Times serialize into the single backend string, formatted to the
+    // 12-hour display style every existing event uses. An end without a
+    // start is refused; a start without an end stands alone. Overnight
+    // ranges are legitimate (e.g. "12:00 pm - 1:00 am"), so end-before-start
+    // is allowed, unlike dates.
+    const timeStart = String(form.get("timeStart") ?? "")
+    const timeEnd = String(form.get("timeEnd") ?? "").trim()
+    if (timeEnd && !timeStart) {
+      setError("Select a start time first.")
+      return
+    }
+    let time = ""
+    if (timeStart) {
+      time = formatTimeInput(timeStart)
+      if (timeEnd) time += ` - ${formatTimeInput(timeEnd)}`
+    }
     setSaving(true)
     setError(null)
     try {
@@ -68,7 +84,7 @@ export function EventFormDialog() {
         location: String(form.get("location") ?? ""),
         description: String(form.get("description") ?? ""),
         orgId,
-        time: String(form.get("time") ?? ""),
+        time,
       })
       invalidatePrefix("events:")
       invalidatePrefix("dashboard:")
@@ -171,14 +187,15 @@ export function EventFormDialog() {
               />
             )}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="time">Time</Label>
-            <Input
-              id="time"
-              name="time"
-              maxLength={100}
-              placeholder="12:00 pm - 5:00 pm"
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="timeStart">Start time</Label>
+              <Input id="timeStart" name="timeStart" type="time" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="timeEnd">End time</Label>
+              <Input id="timeEnd" name="timeEnd" type="time" />
+            </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="description">Description</Label>

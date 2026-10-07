@@ -8,6 +8,23 @@ export function formatEventDate(value: string): string {
   })
 }
 
+/**
+ * Formats a native time-picker value ("HH:MM", 24-hour) into the 12-hour
+ * display style event times use ("8:00 AM"). Pure string mapping, no Date
+ * involved — ranges like "8:00 AM - 5:00 PM" are composed by the caller.
+ * Anything that is not a picker value passes through untouched.
+ */
+export function formatTimeInput(value: string): string {
+  const match = /^(\d{2}):(\d{2})$/.exec(value.trim())
+  if (!match) return value
+  let hour = Number(match[1])
+  if (hour > 23 || Number(match[2]) > 59) return value
+  const suffix = hour < 12 ? "AM" : "PM"
+  hour = hour % 12
+  if (hour === 0) hour = 12
+  return `${hour}:${match[2]} ${suffix}`
+}
+
 export function formatTimestamp(value: string): string {
   const date = new Date(value)
   if (!Number.isNaN(date.getTime())) {

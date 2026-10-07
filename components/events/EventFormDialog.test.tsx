@@ -75,7 +75,7 @@ describe("EventFormDialog", () => {
     expect(input.orgId).toBe("ORG-001")
   })
 
-  it("submits the time string verbatim", async () => {
+  it("serializes start and end pickers as a 12-hour range", async () => {
     vi.mocked(createEvent).mockResolvedValue({
       success: true,
       event: { id: "EVT-001" } as SchoolEvent,
@@ -85,8 +85,11 @@ describe("EventFormDialog", () => {
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     await chooseOrg("Batangas State University")
-    fireEvent.change(screen.getByLabelText("Time"), {
-      target: { value: "12:00 pm - 5:00 pm" },
+    fireEvent.change(screen.getByLabelText("Start time"), {
+      target: { value: "08:00" },
+    })
+    fireEvent.change(screen.getByLabelText("End time"), {
+      target: { value: "17:00" },
     })
     fireEvent.click(screen.getByRole("button", { name: /^create event$/i }))
     await waitFor(() => {
@@ -96,7 +99,46 @@ describe("EventFormDialog", () => {
       string,
       unknown
     >
-    expect(input.time).toBe("12:00 pm - 5:00 pm")
+    expect(input.time).toBe("8:00 AM - 5:00 PM")
+  })
+
+  it("sends a lone start time on its own", async () => {
+    vi.mocked(createEvent).mockResolvedValue({
+      success: true,
+      event: { id: "EVT-001" } as SchoolEvent,
+    })
+    mockOrgs(orgs)
+    render(<EventFormDialog />)
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }))
+    fillBasics()
+    await chooseOrg("Batangas State University")
+    fireEvent.change(screen.getByLabelText("Start time"), {
+      target: { value: "08:00" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /^create event$/i }))
+    await waitFor(() => {
+      expect(createEvent).toHaveBeenCalledTimes(1)
+    })
+    const input = vi.mocked(createEvent).mock.calls[0][0] as unknown as Record<
+      string,
+      unknown
+    >
+    expect(input.time).toBe("8:00 AM")
+  })
+
+  it("refuses an end time with no start time", async () => {
+    mockOrgs(orgs)
+    render(<EventFormDialog />)
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }))
+    fillBasics()
+    await chooseOrg("Batangas State University")
+    fireEvent.change(screen.getByLabelText("End time"), {
+      target: { value: "17:00" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /^create event$/i }))
+    const alert = await screen.findByRole("alert")
+    expect(alert.textContent).toContain("start time")
+    expect(createEvent).not.toHaveBeenCalled()
   })
 
   it("sends a single start date unchanged", async () => {
