@@ -48,7 +48,9 @@ export interface FilterOptions {
  * Distinct dropdown values derived from the full (unfiltered) attendance
  * list, so facet options never shrink as filters are applied.
  */
-export function distinctFilterOptions(records: AttendanceRecord[]): FilterOptions {
+export function distinctFilterOptions(
+  records: AttendanceRecord[]
+): FilterOptions {
   // One pass populating four sets, rather than four map+Set passes with a
   // sort each: this runs over the full unfiltered list on every render of
   // the event detail page.
@@ -104,6 +106,63 @@ export function filterAttendance(
       matches(record.gender, filters.gender)
     )
   })
+}
+
+export interface PaginationParams {
+  /** 1-indexed page. */
+  page: number
+  pageSize: number
+}
+
+export const DEFAULT_PAGE_SIZE = 50
+export const MAX_PAGE_SIZE = 100
+
+/**
+ * Reads ?page= / ?pageSize= with safe defaults. Non-numeric, fractional,
+ * and out-of-range values clamp rather than throw, so hand-edited URLs
+ * degrade to a valid page instead of a 400.
+ */
+export function parsePaginationParams(
+  searchParams: URLSearchParams
+): PaginationParams {
+  const rawPage = Number(searchParams.get("page"))
+  const rawSize = Number(searchParams.get("pageSize"))
+  const page = Number.isInteger(rawPage) && rawPage > 0 ? rawPage : 1
+  const pageSize =
+    Number.isInteger(rawSize) && rawSize > 0
+      ? Math.min(rawSize, MAX_PAGE_SIZE)
+      : DEFAULT_PAGE_SIZE
+  return { page, pageSize }
+}
+
+export interface PaginatedRecords {
+  records: AttendanceRecord[]
+  total: number
+  page: number
+  pageSize: number
+  pages: number
+}
+
+/**
+ * Slices a filtered record list into one 1-indexed page. Pages past the
+ * end clamp to the last page so a shrunken filter set never strands the
+ * table on an empty page.
+ */
+export function paginateRecords(
+  records: AttendanceRecord[],
+  page: number,
+  pageSize: number
+): PaginatedRecords {
+  const total = records.length
+  const pages = Math.max(1, Math.ceil(total / pageSize))
+  const safePage = Math.min(Math.max(1, page), pages)
+  return {
+    records: records.slice((safePage - 1) * pageSize, safePage * pageSize),
+    total,
+    page: safePage,
+    pageSize,
+    pages,
+  }
 }
 
 const CSV_HEADERS = [

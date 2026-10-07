@@ -49,14 +49,23 @@ export function useEvent(eventId: string | null) {
 
 export function useAttendance(
   eventId: string | null,
-  filters?: AttendanceFilters
+  filters?: AttendanceFilters,
+  page?: number,
+  pageSize?: number
 ) {
+  const paginationKey = `${page ?? 1}:${pageSize ?? 50}`
   const key = eventId
-    ? `attendance:${eventId}:${JSON.stringify(filters ?? {})}`
+    ? `attendance:${eventId}:${JSON.stringify(filters ?? {})}:${paginationKey}`
     : null
   const result = useCached(
     key,
-    eventId ? () => listAttendance(eventId, filters) : null,
+    eventId
+      ? () =>
+          listAttendance(eventId, filters, {
+            page: page ?? 1,
+            pageSize: pageSize ?? 50,
+          })
+      : null,
     10_000
   )
   const refresh = React.useCallback(() => {

@@ -2,7 +2,12 @@ import { NextResponse } from "next/server"
 import { recordAttendance } from "@/integration/attendance"
 import { getAttendanceCachedFor } from "@/integration/cached"
 import { expireAttendance } from "@/integration/invalidate"
-import { filterAttendance, parseAttendanceFilters } from "@/lib/attendance"
+import {
+  filterAttendance,
+  paginateRecords,
+  parseAttendanceFilters,
+  parsePaginationParams,
+} from "@/lib/attendance"
 import { requireAdmin } from "@/lib/auth/dal"
 import {
   cachedJson,
@@ -19,15 +24,27 @@ export async function GET(request: Request, context: AttendanceParams) {
   return respondWith(async () => {
     await requireAdmin()
     const { eventId } = await context.params
-    const filters = parseAttendanceFilters(
-      new URL(request.url).searchParams
-    )
-    const attendance = filterAttendance(
+    const searchParams = new URL(request.url).searchParams
+    const filters = parseAttendanceFilters(searchParams)
+    const { page, pageSize } = parsePaginationParams(searchParams)
+    // The upstream Apps Script read stays whole and cached (10s server
+    // cache + tag invalidation on record), so repeat page turns cost one
+    // sheet read total. Only the filtered page slice leaves this route,
+    // cutting the client payload from O(n) to O(pageSize).
+    const filtered = filterAttendance(
       await getAttendanceCachedFor(eventId),
       filters
     )
+    const paginated = paginateRecords(filtered, page, pageSize)
     return cachedJson(
-      { success: true, attendance, total: attendance.length },
+      {
+        success: true,
+        attendance: paginated.records,
+        total: paginated.total,
+        page: paginated.page,
+        pageSize: paginated.pageSize,
+        pages: paginated.pages,
+      },
       10
     )
   })

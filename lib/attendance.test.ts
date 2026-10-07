@@ -3,7 +3,9 @@ import type { AttendanceRecord } from "@/models/attendance"
 import {
   distinctFilterOptions,
   filterAttendance,
+  paginateRecords,
   parseAttendanceFilters,
+  parsePaginationParams,
   toAttendanceCsv,
 } from "./attendance"
 
@@ -121,6 +123,61 @@ describe("distinctFilterOptions", () => {
       programs: [],
       yearLevels: [],
       genders: [],
+    })
+  })
+})
+
+describe("parsePaginationParams", () => {
+  it("defaults to page 1 of 50", () => {
+    expect(parsePaginationParams(params(""))).toEqual({
+      page: 1,
+      pageSize: 50,
+    })
+  })
+
+  it("reads valid page and pageSize", () => {
+    expect(parsePaginationParams(params("page=3&pageSize=25"))).toEqual({
+      page: 3,
+      pageSize: 25,
+    })
+  })
+
+  it("clamps garbage instead of throwing", () => {
+    expect(parsePaginationParams(params("page=0&pageSize=abc"))).toEqual({
+      page: 1,
+      pageSize: 50,
+    })
+    expect(parsePaginationParams(params("page=2.5&pageSize=500"))).toEqual({
+      page: 1,
+      pageSize: 100,
+    })
+  })
+})
+
+describe("paginateRecords", () => {
+  const five = [...records, ...records].slice(0, 5)
+
+  it("slices a 1-indexed page and reports metadata", () => {
+    const result = paginateRecords(five, 2, 2)
+    expect(result.records).toHaveLength(2)
+    expect(result.total).toBe(5)
+    expect(result.page).toBe(2)
+    expect(result.pages).toBe(3)
+  })
+
+  it("clamps past-the-end pages to the last page", () => {
+    const result = paginateRecords(five, 9, 2)
+    expect(result.page).toBe(3)
+    expect(result.records).toHaveLength(1)
+  })
+
+  it("reports one empty page for an empty list", () => {
+    expect(paginateRecords([], 1, 50)).toEqual({
+      records: [],
+      total: 0,
+      page: 1,
+      pageSize: 50,
+      pages: 1,
     })
   })
 })

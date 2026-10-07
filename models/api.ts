@@ -36,6 +36,10 @@ export type StudentResponse = ApiSuccess<{ student: Student }>
 
 export type AttendanceListResponse = ApiSuccess<{
   attendance: AttendanceRecord[]
+  total: number
+  page: number
+  pageSize: number
+  pages: number
 }>
 
 export type AttendanceRecordResponse = ApiSuccess<RecordedAttendance>

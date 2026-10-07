@@ -133,7 +133,8 @@ export function updateEvent(
 
 export function listAttendance(
   eventId: string,
-  filters?: AttendanceFilters
+  filters?: AttendanceFilters,
+  pagination?: { page: number; pageSize: number }
 ): Promise<AttendanceListResponse> {
   const params = new URLSearchParams()
   if (filters?.q) params.set("q", filters.q)
@@ -141,6 +142,10 @@ export function listAttendance(
   if (filters?.program) params.set("program", filters.program)
   if (filters?.yearLevel) params.set("yearLevel", filters.yearLevel)
   if (filters?.gender) params.set("gender", filters.gender)
+  if (pagination) {
+    params.set("page", String(pagination.page))
+    params.set("pageSize", String(pagination.pageSize))
+  }
   const qs = params.toString()
   return request<AttendanceListResponse>(
     `/api/events/${encodeURIComponent(eventId)}/attendance${qs ? `?${qs}` : ""}`,
