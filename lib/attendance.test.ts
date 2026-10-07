@@ -6,6 +6,7 @@ import {
   paginateRecords,
   parseAttendanceFilters,
   parsePaginationParams,
+  sortAttendanceNewestFirst,
   toAttendanceCsv,
 } from "./attendance"
 
@@ -179,6 +180,27 @@ describe("paginateRecords", () => {
       pageSize: 50,
       pages: 1,
     })
+  })
+})
+
+describe("sortAttendanceNewestFirst", () => {
+  it("orders newest check-in first without mutating the input", () => {
+    const input = [records[0], records[2], records[1]]
+    const sorted = sortAttendanceNewestFirst(input)
+    expect(sorted.map((r) => r.srcode)).toEqual([
+      "26-12347",
+      "26-12346",
+      "26-12345",
+    ])
+    expect(input[0].srcode).toBe("26-12345")
+  })
+
+  it("sinks unparseable timestamps to the end", () => {
+    const sorted = sortAttendanceNewestFirst([
+      { ...records[0], timestamp: "not a date" },
+      records[1],
+    ])
+    expect(sorted.map((r) => r.srcode)).toEqual(["26-12346", "26-12345"])
   })
 })
 

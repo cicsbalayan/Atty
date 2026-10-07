@@ -165,6 +165,21 @@ export function paginateRecords(
   }
 }
 
+/**
+ * Newest check-in first, for the on-screen attendees table. Returns a new
+ * array; unparseable timestamps sink to the end rather than scattering.
+ * Export and print paths stay in sheet (chronological) order.
+ */
+export function sortAttendanceNewestFirst(
+  records: AttendanceRecord[]
+): AttendanceRecord[] {
+  const timeOf = (record: AttendanceRecord): number => {
+    const time = new Date(record.timestamp).getTime()
+    return Number.isNaN(time) ? Number.NEGATIVE_INFINITY : time
+  }
+  return [...records].sort((a, b) => timeOf(b) - timeOf(a))
+}
+
 const CSV_HEADERS = [
   "Timestamp",
   "SRCODE",

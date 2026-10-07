@@ -7,6 +7,7 @@ import {
   paginateRecords,
   parseAttendanceFilters,
   parsePaginationParams,
+  sortAttendanceNewestFirst,
 } from "@/lib/attendance"
 import { requireAdmin } from "@/lib/auth/dal"
 import {
@@ -30,12 +31,17 @@ export async function GET(request: Request, context: AttendanceParams) {
     // The upstream Apps Script read stays whole and cached (10s server
     // cache + tag invalidation on record), so repeat page turns cost one
     // sheet read total. Only the filtered page slice leaves this route,
-    // cutting the client payload from O(n) to O(pageSize).
+    // cutting the client payload from O(n) to O(pageSize). The table shows
+    // newest check-ins first; export and print keep chronological order.
     const filtered = filterAttendance(
       await getAttendanceCachedFor(eventId),
       filters
     )
-    const paginated = paginateRecords(filtered, page, pageSize)
+    const paginated = paginateRecords(
+      sortAttendanceNewestFirst(filtered),
+      page,
+      pageSize
+    )
     return cachedJson(
       {
         success: true,
