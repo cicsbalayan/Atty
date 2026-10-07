@@ -125,7 +125,15 @@ export function EventFormDialog() {
             </div>
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="dateEnd">End date</Label>
-              <Input id="dateEnd" name="dateEnd" type="date" />
+              <Input
+                id="dateEnd"
+                name="dateEnd"
+                type="date"
+                aria-describedby="dateEnd-hint"
+              />
+              <p id="dateEnd-hint" className="text-xs text-muted-foreground">
+                Optional — leave blank for one-day events.
+              </p>
             </div>
           </div>
           <div className="flex flex-col gap-1.5">

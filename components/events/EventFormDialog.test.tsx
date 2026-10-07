@@ -161,6 +161,17 @@ describe("EventFormDialog", () => {
     expect(createEvent).not.toHaveBeenCalled()
   })
 
+  it("marks the end date optional and links it to the field", async () => {
+    mockOrgs(orgs)
+    render(<EventFormDialog />)
+    fireEvent.click(screen.getByRole("button", { name: /new event/i }))
+    const hint = screen.getByText(/leave blank for one-day events/i)
+    expect(hint.getAttribute("id")).toBe("dateEnd-hint")
+    expect(screen.getByLabelText("End date").getAttribute("aria-describedby")).toBe(
+      "dateEnd-hint"
+    )
+  })
+
   it("refuses to submit with no organization selected", async () => {
     mockOrgs(orgs)
     render(<EventFormDialog />)
