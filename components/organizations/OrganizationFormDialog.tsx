@@ -53,14 +53,14 @@ export function OrganizationFormDialog() {
       <DialogTrigger
         render={
           <Button className="clay-btn clay-btn-primary">
-            <Plus className="size-4" aria-hidden /> New organizer
+            <Plus className="size-4" aria-hidden /> Add organizer
           </Button>
         }
       />
       <DialogContent>
-          <DialogTitle>Create organizer</DialogTitle>
+        <DialogTitle>Add organizer</DialogTitle>
         <DialogDescription>
-          The name and email appear on printed attendance reports.
+          The name and email will appear on printed attendance reports.
         </DialogDescription>
         <form
           className="mt-4 flex flex-col gap-3"

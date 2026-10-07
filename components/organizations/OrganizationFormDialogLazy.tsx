@@ -14,7 +14,7 @@ export const OrganizationFormDialogLazy = dynamic(
     ssr: false,
     loading: () => (
       <Button disabled className="clay-btn clay-btn-primary">
-        <Plus className="size-4" aria-hidden /> New organizer
+        <Plus className="size-4" aria-hidden /> Add organizer
       </Button>
     ),
   }

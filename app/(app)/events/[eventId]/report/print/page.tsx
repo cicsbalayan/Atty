@@ -1,6 +1,10 @@
 import Link from "next/link"
 import { notFound } from "next/navigation"
-import { getAttendanceCachedFor, getEventCachedFor, getOrganizationCachedFor } from "@/integration/cached"
+import {
+  getAttendanceCachedFor,
+  getEventCachedFor,
+  getOrganizationCachedFor,
+} from "@/integration/cached"
 import { filterAttendance, parseAttendanceFilters } from "@/lib/attendance"
 import { requireAdminPage } from "@/lib/auth/dal"
 import { PaginatedReport } from "@/components/reports/PaginatedReport"
@@ -43,7 +47,9 @@ export default async function PrintReportPage({
   const org = event.orgId
     ? await getOrganizationCachedFor(event.orgId).catch(() => null)
     : null
-  const orgName = org?.name.trim() ? org.name : "Supreme Student Council Alangilan – Balayan"
+  const orgName = org?.name.trim()
+    ? org.name
+    : "Supreme Student Council Alangilan – Balayan"
   const orgEmail = org?.email.trim()
     ? org.email
     : "sscbalayan@g.batstate-u.edu.ph"
