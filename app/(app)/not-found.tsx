@@ -1,10 +1,8 @@
 import Link from "next/link"
 
-export default function NotFound() {
-  // Shell-less fallback: centered in the viewport since no AppShell wraps
-  // this boundary. Routes inside (app) use its own centered not-found.
+export default function AppNotFound() {
   return (
-    <main className="grid min-h-dvh place-items-center p-4">
+    <main className="grid min-h-[50vh] place-items-center">
       <div className="clay mx-auto flex w-full max-w-md flex-col items-center gap-3 p-8 text-center">
         <p className="font-mono text-sm text-muted-foreground">404</p>
         <h1 className="text-xl font-bold">Page not found</h1>
