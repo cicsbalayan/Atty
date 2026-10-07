@@ -485,6 +485,11 @@
   }
   .animate-clay-pop { animation: clay-pop 280ms ease both; }
   .animate-clay-ring { animation: clay-ring 900ms ease-out 2; }
+  @keyframes toast-in {
+    0% { transform: translateY(12px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .animate-toast-in { animation: toast-in 220ms ease both; }
   /* Kiosk focus mode: hide app chrome while any element is fullscreen,
      then center the remaining content with room to breathe.
      NOTE: these live outside @layer on purpose — layered utilities
@@ -495,7 +500,7 @@
   .donut-seg:focus-visible { outline: none; filter: brightness(1.12); }
   @media (prefers-reduced-motion: reduce) {
     .clay-btn, .clay-btn:hover { transition: none; transform: none; }
-    .animate-clay-pop, .animate-clay-ring { animation: none; }
+    .animate-clay-pop, .animate-clay-ring, .animate-toast-in { animation: none; }
     .donut-seg { transition: none; }
   }
 }

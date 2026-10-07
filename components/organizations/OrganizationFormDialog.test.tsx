@@ -11,6 +11,7 @@ import {
 import * as React from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { OrganizationFormDialog } from "./OrganizationFormDialog"
+import { ToastProvider } from "@/components/ui/toast"
 import { createOrganization } from "@/lib/api-client"
 
 vi.mock("@/lib/api-client", () => ({ createOrganization: vi.fn() }))
@@ -23,7 +24,11 @@ beforeEach(() => {
 afterEach(cleanup)
 
 function open() {
-  render(<OrganizationFormDialog />)
+  render(
+    <ToastProvider>
+      <OrganizationFormDialog />
+    </ToastProvider>
+  )
   fireEvent.click(screen.getByRole("button", { name: /add organizer/i }))
 }
 

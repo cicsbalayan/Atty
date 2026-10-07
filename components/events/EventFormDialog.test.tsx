@@ -11,6 +11,7 @@ import {
 import * as React from "react"
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { EventFormDialog } from "./EventFormDialog"
+import { ToastProvider } from "@/components/ui/toast"
 import { createEvent } from "@/lib/api-client"
 import { formatEventDate } from "@/lib/format"
 import { useOrganizations } from "@/hooks/useQueries"
@@ -37,6 +38,14 @@ function mockOrgs(list: typeof orgs) {
   })
 }
 
+function renderDialog() {
+  return render(
+    <ToastProvider>
+      <EventFormDialog />
+    </ToastProvider>
+  )
+}
+
 function fillBasics() {
   fireEvent.change(screen.getByLabelText("Event name"), {
     target: { value: "Freshmen Orientation" },
@@ -60,7 +69,7 @@ describe("EventFormDialog", () => {
       event: { id: "EVT-001" } as SchoolEvent,
     })
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     await chooseOrg("Batangas State University")
@@ -81,7 +90,7 @@ describe("EventFormDialog", () => {
       event: { id: "EVT-001" } as SchoolEvent,
     })
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     await chooseOrg("Batangas State University")
@@ -108,7 +117,7 @@ describe("EventFormDialog", () => {
       event: { id: "EVT-001" } as SchoolEvent,
     })
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     await chooseOrg("Batangas State University")
@@ -128,7 +137,7 @@ describe("EventFormDialog", () => {
 
   it("refuses an end time with no start time", async () => {
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     await chooseOrg("Batangas State University")
@@ -147,7 +156,7 @@ describe("EventFormDialog", () => {
       event: { id: "EVT-001" } as SchoolEvent,
     })
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     await chooseOrg("Batangas State University")
@@ -168,7 +177,7 @@ describe("EventFormDialog", () => {
       event: { id: "EVT-001" } as SchoolEvent,
     })
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     await chooseOrg("Batangas State University")
@@ -190,7 +199,7 @@ describe("EventFormDialog", () => {
 
   it("refuses an end date before the start date", async () => {
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     await chooseOrg("Batangas State University")
@@ -205,18 +214,18 @@ describe("EventFormDialog", () => {
 
   it("marks the end date optional and links it to the field", async () => {
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     const hint = screen.getByText(/leave blank for one-day events/i)
     expect(hint.getAttribute("id")).toBe("dateEnd-hint")
-    expect(screen.getByLabelText("End date").getAttribute("aria-describedby")).toBe(
-      "dateEnd-hint"
-    )
+    expect(
+      screen.getByLabelText("End date").getAttribute("aria-describedby")
+    ).toBe("dateEnd-hint")
   })
 
   it("refuses to submit with no organization selected", async () => {
     mockOrgs(orgs)
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     fillBasics()
     fireEvent.click(screen.getByRole("button", { name: /^create event$/i }))
@@ -232,7 +241,7 @@ describe("EventFormDialog", () => {
       loading: false,
       refresh: vi.fn(),
     })
-    render(<EventFormDialog />)
+    renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))
     expect(
       screen.getByText(

@@ -13,11 +13,13 @@ import {
 } from "@/components/ui/dialog"
 import { Input, Label } from "@/components/ui/input"
 import { ApiError, createOrganization } from "@/lib/api-client"
+import { useToast } from "@/components/ui/toast"
 import { invalidatePrefix } from "@/hooks/useCached"
 import type { CreateOrganizationInput } from "@/models/organization"
 
 export function OrganizationFormDialog() {
   const router = useRouter()
+  const toast = useToast()
   const [open, setOpen] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
@@ -38,6 +40,7 @@ export function OrganizationFormDialog() {
       await createOrganization(input)
       invalidatePrefix("organizations:")
       setOpen(false)
+      toast.success("Organizer added.")
       router.refresh()
     } catch (e) {
       setError(

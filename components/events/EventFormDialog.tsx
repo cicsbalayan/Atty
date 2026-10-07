@@ -16,11 +16,13 @@ import Link from "next/link"
 import { ApiError, createEvent } from "@/lib/api-client"
 import { formatEventDate, formatTimeInput } from "@/lib/format"
 import { useOrganizations } from "@/hooks/useQueries"
+import { useToast } from "@/components/ui/toast"
 import { ClaySelect } from "@/components/ui/select"
 import { invalidatePrefix } from "@/hooks/useCached"
 
 export function EventFormDialog() {
   const router = useRouter()
+  const toast = useToast()
   const [open, setOpen] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
@@ -89,6 +91,7 @@ export function EventFormDialog() {
       invalidatePrefix("events:")
       invalidatePrefix("dashboard:")
       close()
+      toast.success("Event created.")
       router.refresh()
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not create event.")
