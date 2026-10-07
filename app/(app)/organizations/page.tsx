@@ -3,6 +3,8 @@ import { OrganizationCard } from "@/components/organizations/OrganizationCard"
 import { OrganizationFormDialogLazy } from "@/components/organizations/OrganizationFormDialogLazy"
 import { requireAdminPage } from "@/lib/auth/dal"
 
+export const metadata = { title: "Organizers" }
+
 /**
  * Request-time rendered: the list must reflect creates without a redeploy,
  * and the cached read keeps repeat views off the Apps Script roundtrip.

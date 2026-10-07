@@ -5,7 +5,7 @@ import { safeNext } from "@/lib/auth/redirect"
 import { LoginForm } from "./LoginForm"
 
 export const metadata: Metadata = {
-  title: "Sign in · Atty",
+  title: "Sign in",
   robots: { index: false, follow: false },
 }
 

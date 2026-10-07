@@ -6,6 +6,8 @@ import { EventFormDialogLazy } from "@/components/events/EventFormDialogLazy"
 import { requireAdminPage } from "@/lib/auth/dal"
 import { parseEventStatusParam, sortEventsForListing } from "@/lib/events"
 
+export const metadata = { title: "Events" }
+
 /**
  * Request-time rendered for the same reason as the dashboard, and because
  * the status/search filters come from searchParams. The cached read keeps

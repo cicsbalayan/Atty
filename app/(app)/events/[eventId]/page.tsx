@@ -24,6 +24,16 @@ import type { AttendanceRecord } from "@/models/attendance"
 
 export const dynamic = "force-dynamic"
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ eventId: string }>
+}) {
+  const { eventId } = await params
+  const event = await getEventCachedFor(eventId).catch(() => null)
+  return { title: event ? event.name : "Event" }
+}
+
 /**
  * Streams in after the header: resolves the shared attendance promise
  * (started alongside the event fetch) into dropdown facet options.

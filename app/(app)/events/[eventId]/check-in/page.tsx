@@ -8,6 +8,16 @@ import { formatEventDate } from "@/lib/format"
 
 export const dynamic = "force-dynamic"
 
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ eventId: string }>
+}) {
+  const { eventId } = await params
+  const event = await getEventCachedFor(eventId).catch(() => null)
+  return { title: event ? `Check in · ${event.name}` : "Check in" }
+}
+
 export default async function CheckInPage({ params }: { params: Promise<{ eventId: string }> }) {
   // Staff authenticate once with the PIN, then operate the kiosk for the
   // life of the session. The door workflow is not left open to anonymous

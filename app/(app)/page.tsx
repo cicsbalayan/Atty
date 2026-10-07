@@ -3,6 +3,8 @@ import { EventSection } from "@/components/dashboard/EventSection"
 import { StatCards } from "@/components/dashboard/StatCards"
 import { requireAdminPage } from "@/lib/auth/dal"
 
+export const metadata = { title: "Dashboard" }
+
 /**
  * Rendered per request rather than prerendered at build time: the data
  * cache below already removes the upstream roundtrip, and prerendering

@@ -13,7 +13,17 @@ import { PrintButton } from "@/components/reports/PrintButton"
 
 export const dynamic = "force-dynamic"
 
-export const metadata = { title: "Attendance Report" }
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ eventId: string }>
+}) {
+  const { eventId } = await params
+  const event = await getEventCachedFor(eventId).catch(() => null)
+  return {
+    title: event ? `${event.name} · Attendance Report` : "Attendance Report",
+  }
+}
 
 export default async function PrintReportPage({
   params,
