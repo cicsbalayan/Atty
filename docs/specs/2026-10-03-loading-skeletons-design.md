@@ -42,7 +42,7 @@ Settled with the requester on 2026-10-03; not reopenable during implementation.
    the nearest `loading.tsx` during navigation, so colocation gives each
    route its own skeleton with no route-matching logic.
 2. **One shared `EventCardSkeleton`** in `components/events/`, used by the
-   dashboard, events-list, and event-detail fallbacks. All three surfaces
+   dashboard and events-list fallbacks. Both surfaces
    render real `EventCard`s.
 3. **The table fallback stays presentational.** It must not reuse the real
    `Table` primitive, which would expose an empty data table to assistive
@@ -64,7 +64,7 @@ matching the existing convention (`"Loading"`, `"Loading attendance"`,
 The login page is brand row, heading, and a card holding the PIN field,
 submit button, and error slot. Mirror that:
 
-- Centered `max-w-sm` column: row with `size-14 rounded-2xl` tile plus two
+- Centered `max-w-lg` column: row with `size-14 rounded-2xl` tile plus two
   text lines; `display`-scale title line; `clay` card with `p-5` holding a
   tall `h-14` bar, an `h-12` button bar, and no error slot (errors never
   show while loading).
@@ -78,14 +78,14 @@ and 3 event sections (title + card grid each):
 - 3 stat tiles in `grid gap-4 sm:grid-cols-3`: each a `clay` card with a row
   of `size-11 rounded-2xl` tile, big-number line, label line.
 - 3 sections: each a title line (`h-6 w-40`) plus a `grid gap-4
-  sm:grid-cols-2 xl:grid-cols-3` of 2 `EventCardSkeleton`s.
+sm:grid-cols-2 xl:grid-cols-3` of 2 `EventCardSkeleton`s.
 
 ### `app/(app)/events/loading.tsx`
 
 The events page renders a header row (title + sub left, New Event button
 right) plus the same `sm:2/xl:3` card grid:
 
-- Header row: title + sub lines left, `h-10 w-32 rounded-full` button pill
+- Header row: title + sub lines left, `h-8 w-32 rounded-full` button pill
   right.
 - Grid of 3 `EventCardSkeleton`s.
 
@@ -108,8 +108,8 @@ and the table:
 The kiosk renders a centered `max-w-xl` column: right-aligned fullscreen
 pill, event info card, form card:
 
-- `mx-auto w-full max-w-xl flex flex-col gap-4`: right-aligned `h-9 w-9
-  rounded-full` pill; centered info card (id line, title, date line);
+- `mx-auto w-full max-w-xl flex flex-col gap-4`: right-aligned `size-8
+rounded-full` pill; centered info card (id line, title, date line);
   form card (tall input bar + full-width button bar).
 
 ### `app/(app)/events/[eventId]/report/print/loading.tsx`
@@ -127,7 +127,7 @@ the fallback covers the whole article:
 The organizations page renders a header row plus the same `sm:2/xl:3` card
 grid, where each card holds name, mono id, and email rows:
 
-- Header row: title + sub lines left, `h-10 w-40 rounded-full` button pill
+- Header row: title + sub lines left, `h-8 w-40 rounded-full` button pill
   right (matching "New organization").
 - Grid of 3 org-card skeletons: title line, mono id line, email row.
 
@@ -140,7 +140,7 @@ button pills) inside the same `clay-topglow` card:
 - `CardHeader`: title line + mono id line left, small pill right.
 - `CardContent`: 3 meta rows, then a row with two small button pills.
 
-Used by the dashboard, events-list, and event-detail fallbacks.
+Used by the dashboard and events-list fallbacks.
 
 ### AttendanceTable fallback reshape
 

@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 /**
  * Loading stand-in for EventCard: title, id line, badge-side pill, three
- * meta rows, two action pills. Entirely presentational — no links, buttons,
+ * meta rows, two action pills. Entirely presentational - no links, buttons,
  * or focusable content, so it can never be operated or tabbed into.
  */
 export function EventCardSkeleton() {
