@@ -7,11 +7,10 @@ import type { AttendanceFilters as Filters } from "@/lib/attendance"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { AttendanceTableSkeleton } from "@/components/attendance/AttendanceTableSkeleton"
-import { Label } from "@/components/ui/input"
 import { Table, THead, TR, TH, TD } from "@/components/ui/table"
 import type { AttendanceListResponse } from "@/models/api"
 
-const PAGE_SIZE_OPTIONS = [25, 50, 100]
+const PAGE_SIZE = 50
 
 export function AttendanceTable({
   eventId,
@@ -23,27 +22,24 @@ export function AttendanceTable({
   // 1-indexed to match the API. Only the current page is ever fetched, so
   // a 5,000-row event costs one page of rows per turn, not the full list.
   const [page, setPage] = React.useState(1)
-  const [pageSize, setPageSize] = React.useState(50)
   const filterKey = JSON.stringify(filters)
   // Render-phase reset (React docs pattern): avoids setState-in-effect.
-  const [prevKey, setPrevKey] = React.useState(
-    `${eventId}:${filterKey}:${pageSize}`
-  )
-  if (prevKey !== `${eventId}:${filterKey}:${pageSize}`) {
-    setPrevKey(`${eventId}:${filterKey}:${pageSize}`)
+  const [prevKey, setPrevKey] = React.useState(`${eventId}:${filterKey}`)
+  if (prevKey !== `${eventId}:${filterKey}`) {
+    setPrevKey(`${eventId}:${filterKey}`)
     setPage(1)
   }
   const { data, error, loading } = useAttendance(
     eventId,
     filters,
     page,
-    pageSize
+    PAGE_SIZE
   )
   // Keep the previous page visible while the next one loads, scoped to the
   // current filter set so a filter change never flashes stale rows. Synced
   // in render (same React docs pattern as the reset above) because the
   // value is read during render.
-  const scopeKey = `${eventId}:${filterKey}:${pageSize}`
+  const scopeKey = `${eventId}:${filterKey}`
   const [lastView, setLastView] = React.useState<{
     scope: string
     data: AttendanceListResponse
@@ -127,25 +123,6 @@ export function AttendanceTable({
           {fetching ? " · Loading…" : ""}
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Label
-            htmlFor="attendance-page-size"
-            className="text-muted-foreground"
-          >
-            Rows
-          </Label>
-          <select
-            id="attendance-page-size"
-            className="clay-input h-9 w-auto px-2 text-sm"
-            value={pageSize}
-            disabled={fetching}
-            onChange={(event) => setPageSize(Number(event.target.value))}
-          >
-            {PAGE_SIZE_OPTIONS.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
           <Button
             type="button"
             size="sm"
