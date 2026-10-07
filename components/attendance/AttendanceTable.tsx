@@ -6,12 +6,18 @@ import { useAttendance } from "@/hooks/useQueries"
 import type { AttendanceFilters as Filters } from "@/lib/attendance"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
+import { AttendanceTableSkeleton } from "@/components/attendance/AttendanceTableSkeleton"
 import { Table, THead, TR, TH, TD } from "@/components/ui/table"
 
 const PAGE_SIZE = 50
 
-export function AttendanceTable({ eventId, filters }: { eventId: string; filters: Filters }) {
+export function AttendanceTable({
+  eventId,
+  filters,
+}: {
+  eventId: string
+  filters: Filters
+}) {
   const { data, error, loading } = useAttendance(eventId, filters)
   const [page, setPage] = React.useState(0)
   const records = React.useDeferredValue(data?.attendance ?? [])
@@ -24,19 +30,21 @@ export function AttendanceTable({ eventId, filters }: { eventId: string; filters
   }
 
   if (loading && records.length === 0) {
-    return (
-      <div className="flex flex-col gap-2" aria-label="Loading attendance">
-        <Skeleton className="h-12" />
-        <Skeleton className="h-12" />
-        <Skeleton className="h-12" />
-      </div>
-    )
+    return <AttendanceTableSkeleton />
   }
   if (error) {
-    return <p role="alert" className="clay p-4 text-sm text-destructive">Could not load attendance: {error.message}</p>
+    return (
+      <p role="alert" className="clay p-4 text-sm text-destructive">
+        Could not load attendance: {error.message}
+      </p>
+    )
   }
   if (records.length === 0) {
-    return <p className="clay p-4 text-sm text-muted-foreground">No attendance records yet.</p>
+    return (
+      <p className="clay p-4 text-sm text-muted-foreground">
+        No attendance records yet.
+      </p>
+    )
   }
 
   const pages = Math.max(1, Math.ceil(records.length / PAGE_SIZE))
@@ -59,14 +67,24 @@ export function AttendanceTable({ eventId, filters }: { eventId: string; filters
         <tbody>
           {slice.map((r) => (
             <TR key={`${r.srcode}-${r.timestamp}`}>
-              <TD className="whitespace-nowrap">{formatDateOnly(r.timestamp)}</TD>
-              <TD className="whitespace-nowrap tabular-nums">{formatTimeOnly(r.timestamp)}</TD>
+              <TD className="whitespace-nowrap">
+                {formatDateOnly(r.timestamp)}
+              </TD>
+              <TD className="whitespace-nowrap tabular-nums">
+                {formatTimeOnly(r.timestamp)}
+              </TD>
               <TD className="font-mono whitespace-nowrap">{r.srcode}</TD>
               <TD className="min-w-38">{r.name}</TD>
-              <TD className="max-w-40 truncate text-muted-foreground" title={r.college}>
+              <TD
+                className="max-w-40 truncate text-muted-foreground"
+                title={r.college}
+              >
                 {r.college}
               </TD>
-              <TD className="min-w-30 truncate text-muted-foreground" title={r.program}>
+              <TD
+                className="min-w-30 truncate text-muted-foreground"
+                title={r.program}
+              >
                 {r.program}
               </TD>
               <TD>
@@ -78,7 +96,9 @@ export function AttendanceTable({ eventId, filters }: { eventId: string; filters
       </Table>
       {pages > 1 ? (
         <div className="flex items-center justify-between text-sm">
-          <p className="text-muted-foreground">Page {page + 1} of {pages} · {records.length} records</p>
+          <p className="text-muted-foreground">
+            Page {page + 1} of {pages} · {records.length} records
+          </p>
           <div className="flex gap-2">
             <Button
               type="button"

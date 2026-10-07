@@ -2,7 +2,11 @@ import Link from "next/link"
 import { notFound } from "next/navigation"
 import * as React from "react"
 import { Building2, CalendarDays, Clock, MapPin, ScanLine } from "lucide-react"
-import { getAttendanceCachedFor, getEventCachedFor, getOrganizationCachedFor } from "@/integration/cached"
+import {
+  getAttendanceCachedFor,
+  getEventCachedFor,
+  getOrganizationCachedFor,
+} from "@/integration/cached"
 import { buttonVariants } from "@/components/ui/button"
 import { Card, CardContent, CardTitle } from "@/components/ui/card"
 import { EventActions } from "@/components/events/EventActions"
@@ -12,13 +16,10 @@ import { AttendanceTable } from "@/components/attendance/AttendanceTable"
 import { RefreshButton } from "@/components/attendance/RefreshButton"
 import { ExportButton } from "@/components/attendance/ExportButton"
 import { ReportSummary } from "@/components/reports/ReportSummary"
-import { Skeleton } from "@/components/ui/skeleton"
+import { FilterSkeleton } from "@/components/attendance/FilterSkeleton"
 import { requireAdminPage } from "@/lib/auth/dal"
 import { formatEventDate } from "@/lib/format"
-import {
-  distinctFilterOptions,
-  parseAttendanceFilters,
-} from "@/lib/attendance"
+import { distinctFilterOptions, parseAttendanceFilters } from "@/lib/attendance"
 import type { AttendanceRecord } from "@/models/attendance"
 
 export const dynamic = "force-dynamic"
@@ -41,7 +42,12 @@ async function FilterSection({
   } catch {
     records = []
   }
-  return <AttendanceFilters eventId={eventId} options={distinctFilterOptions(records)} />
+  return (
+    <AttendanceFilters
+      eventId={eventId}
+      options={distinctFilterOptions(records)}
+    />
+  )
 }
 
 export default async function EventDetailPage({
@@ -93,27 +99,41 @@ export default async function EventDetailPage({
           <div>
             <CardTitle className="display">{event.name}</CardTitle>
             {event.description ? (
-              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{event.description}</p>
+              <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                {event.description}
+              </p>
             ) : null}
           </div>
           <dl className="flex flex-col gap-3">
             {org?.name ? (
               <div className="flex items-center gap-1.5 text-sm">
-                <Building2 className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <Building2
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
                 <dd className="font-semibold">{org.name}</dd>
               </div>
             ) : null}
             <div className="clay-pressed grid grid-cols-2 gap-x-4 gap-y-3 p-4 sm:grid-cols-3">
               <div className="flex items-center gap-1.5 text-sm">
-                <CalendarDays className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <CalendarDays
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
                 <dd className="font-semibold">{formatEventDate(event.date)}</dd>
               </div>
               <div className="flex items-center gap-1.5 text-sm">
-                <Clock className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <Clock
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
                 <dd className="font-semibold">{event.time || "—"}</dd>
               </div>
               <div className="flex items-center gap-1.5 text-sm">
-                <MapPin className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+                <MapPin
+                  className="size-4 shrink-0 text-muted-foreground"
+                  aria-hidden
+                />
                 <dd className="font-semibold">{event.location || "—"}</dd>
               </div>
             </div>
@@ -122,7 +142,9 @@ export default async function EventDetailPage({
             {event.status === "Active" ? (
               <Link
                 href={`/events/${event!.id}/check-in`}
-                className={buttonVariants({ className: "clay-btn clay-btn-primary" })}
+                className={buttonVariants({
+                  className: "clay-btn clay-btn-primary",
+                })}
               >
                 <ScanLine className="size-4" aria-hidden /> Take Attendance
               </Link>
@@ -136,19 +158,7 @@ export default async function EventDetailPage({
         </CardContent>
       </Card>
       <ReportSummary eventId={event.id} />
-      <React.Suspense
-        fallback={
-          <div className="clay flex flex-col gap-3 p-4" aria-label="Loading filters">
-            <Skeleton className="h-11" />
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              <Skeleton className="h-11" />
-              <Skeleton className="h-11" />
-              <Skeleton className="h-11" />
-              <Skeleton className="h-11" />
-            </div>
-          </div>
-        }
-      >
+      <React.Suspense fallback={<FilterSkeleton />}>
         <FilterSection eventId={event.id} data={attendanceData} />
       </React.Suspense>
       <AttendanceTable eventId={event.id} filters={filters} />
