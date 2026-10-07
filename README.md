@@ -67,6 +67,21 @@ Full walkthrough, including the spreadsheet layout and every page, is in
 
 ## Documentation
 
+Module guides live in [`docs/modules/`](docs/modules/) — one file per
+module, in the order a staff member meets them:
+
+| Module | Covers |
+| --- | --- |
+| [`docs/modules/authentication.md`](docs/modules/authentication.md) | Sign-in, PIN UI, sessions, sign-out |
+| [`docs/modules/dashboard.md`](docs/modules/dashboard.md) | Landing page: stat cards and event sections |
+| [`docs/modules/events.md`](docs/modules/events.md) | Event listing, filter and order, creation, open/close |
+| [`docs/modules/check-in.md`](docs/modules/check-in.md) | Kiosk attendance recording flow |
+| [`docs/modules/attendance-records.md`](docs/modules/attendance-records.md) | Attendees table, filters, pagination, CSV export |
+| [`docs/modules/reports.md`](docs/modules/reports.md) | On-page summary and the official print view |
+| [`docs/modules/organizers.md`](docs/modules/organizers.md) | Organizers and the report letterhead |
+| [`docs/modules/notifications.md`](docs/modules/notifications.md) | Toast system and when it fires |
+| [`docs/modules/backend-integration.md`](docs/modules/backend-integration.md) | Apps Script bridge, caching, invalidation |
+
 Reference documentation lives in [`docs/`](docs/):
 
 | Document | Covers |

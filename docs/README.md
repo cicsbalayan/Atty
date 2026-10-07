@@ -12,6 +12,22 @@ Next.js frontend/BFF and the Google Apps Script backend.
 | [architecture.md](architecture.md) | You need to know how a request travels to Google Sheets and where the trust boundaries are. |
 | [testing.md](testing.md) | You are writing tests, or verifying a change by hand. |
 
+## Modules
+
+One guide per system module, in the order a staff member meets them:
+
+| Document | Read it when |
+|---|---|
+| [modules/authentication.md](modules/authentication.md) | Signing in, the PIN UI, sessions, sign-out. |
+| [modules/dashboard.md](modules/dashboard.md) | Working on the landing page. |
+| [modules/events.md](modules/events.md) | Listing, filtering, creating, opening, or closing events. |
+| [modules/check-in.md](modules/check-in.md) | Touching the kiosk recording flow. |
+| [modules/attendance-records.md](modules/attendance-records.md) | Touching the attendees table, filters, pagination, or export. |
+| [modules/reports.md](modules/reports.md) | Touching the summary charts or the print view. |
+| [modules/organizers.md](modules/organizers.md) | Touching organizers or the letterhead. |
+| [modules/notifications.md](modules/notifications.md) | Adding or changing user-facing feedback. |
+| [modules/backend-integration.md](modules/backend-integration.md) | Touching the Apps Script bridge, caching, or invalidation. |
+
 ## Security
 
 | Document | Read it when |
