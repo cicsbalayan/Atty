@@ -1,11 +1,25 @@
 "use client"
 
 import * as React from "react"
+import { getSharedSnapshots } from "@/lib/offline/shared"
 
 interface CacheEntry<T> {
   data: T | null
   error: Error | null
   updatedAt: number
+  fromSnapshot: boolean
+  savedAt: number | null
+}
+
+const SNAPSHOT_PREFIXES = [
+  "attendance:",
+  "events:",
+  "report:",
+  "organizations:",
+]
+
+function isSnapshotable(key: string): boolean {
+  return SNAPSHOT_PREFIXES.some((prefix) => key.startsWith(prefix))
 }
 
 const cache = new Map<string, CacheEntry<unknown>>()
@@ -81,7 +95,14 @@ export function useCached<T>(
   key: string | null,
   fetcher: (() => Promise<T>) | null,
   staleMs = 10_000
-): { data: T | null; error: Error | null; loading: boolean; refresh: () => void } {
+): {
+  data: T | null
+  error: Error | null
+  loading: boolean
+  refresh: () => void
+  fromSnapshot: boolean
+  savedAt: number | null
+} {
   const [, force] = React.useReducer((n: number) => n + 1, 0)
   const fetcherRef = React.useRef(fetcher)
   const signal = React.useSyncExternalStore(subscribe, getSignal, getSignal)
@@ -116,15 +137,45 @@ export function useCached<T>(
     promise
       ?.then((data) => {
         inflight.delete(currentKey)
-        cache.set(currentKey, { data, error: null, updatedAt: Date.now() })
+        cache.set(currentKey, {
+          data,
+          error: null,
+          updatedAt: Date.now(),
+          fromSnapshot: false,
+          savedAt: null,
+        })
+        if (isSnapshotable(currentKey)) {
+          void getSharedSnapshots().save(currentKey, data)
+        }
         trackSettle()
         if (!cancelled) force()
       })
       .catch((error: Error) => {
         inflight.delete(currentKey)
-        cache.set(currentKey, { data: null, error, updatedAt: Date.now() })
-        trackSettle()
-        if (!cancelled) force()
+        void (async () => {
+          const snapshot = isSnapshotable(currentKey)
+            ? await getSharedSnapshots().load<T>(currentKey)
+            : null
+          if (snapshot) {
+            cache.set(currentKey, {
+              data: snapshot.data,
+              error: null,
+              updatedAt: Date.now(),
+              fromSnapshot: true,
+              savedAt: snapshot.savedAt,
+            })
+          } else {
+            cache.set(currentKey, {
+              data: null,
+              error,
+              updatedAt: Date.now(),
+              fromSnapshot: false,
+              savedAt: null,
+            })
+          }
+          trackSettle()
+          if (!cancelled) force()
+        })()
       })
     return () => {
       cancelled = true
@@ -138,6 +189,8 @@ export function useCached<T>(
     error: entry?.error ?? null,
     loading: enabled && !entry,
     refresh,
+    fromSnapshot: entry?.fromSnapshot ?? false,
+    savedAt: entry?.savedAt ?? null,
   }
 }
 

@@ -4,6 +4,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
 import * as React from "react"
+import { getSharedSnapshots } from "@/lib/offline/shared"
 import { invalidatePrefix, refreshAllReads, useCached } from "./useCached"
 
 beforeEach(() => {
@@ -16,9 +17,13 @@ afterEach(() => {
 })
 
 function Probe({ id, staleMs = 60_000 }: { id: string; staleMs?: number }) {
-  const { data, loading } = useCached(`read:${id}`, async () => {
-    return `value-${calls++}`
-  }, staleMs)
+  const { data, loading } = useCached(
+    `read:${id}`,
+    async () => {
+      return `value-${calls++}`
+    },
+    staleMs
+  )
   if (loading) return <p>loading</p>
   return <p>{data}</p>
 }
@@ -103,5 +108,50 @@ describe("useCached manual refresh", () => {
       refreshAllReads()
     })
     await waitFor(() => expect(screen.getByText("value-2")).toBeTruthy())
+  })
+})
+
+function SnapshotProbe({ fetcher }: { fetcher: () => Promise<string> }) {
+  const { data, loading, fromSnapshot } = useCached(
+    "events:all",
+    fetcher,
+    10_000
+  )
+  if (loading) return <p>loading</p>
+  return <p>{`${fromSnapshot ? "saved:" : "live:"}${data ?? "none"}`}</p>
+}
+
+function setOnline(value: boolean) {
+  Object.defineProperty(window.navigator, "onLine", {
+    value,
+    configurable: true,
+  })
+  window.dispatchEvent(new Event(value ? "online" : "offline"))
+}
+
+describe("useCached snapshots", () => {
+  beforeEach(async () => {
+    refreshAllReads()
+    await getSharedSnapshots().clear()
+    setOnline(true)
+  })
+  afterEach(cleanup)
+
+  it("persists successful reads to the snapshot store", async () => {
+    render(<SnapshotProbe fetcher={() => Promise.resolve("value")} />)
+    await waitFor(() => expect(screen.getByText("live:value")).toBeTruthy())
+    await waitFor(async () => {
+      expect((await getSharedSnapshots().load("events:all"))?.data).toBe(
+        "value"
+      )
+    })
+  })
+
+  it("serves the snapshot with a label when the fetch fails", async () => {
+    await getSharedSnapshots().save("events:all", "value")
+    refreshAllReads()
+    setOnline(false)
+    render(<SnapshotProbe fetcher={() => Promise.reject(new Error("down"))} />)
+    await waitFor(() => expect(screen.getByText("saved:value")).toBeTruthy())
   })
 })

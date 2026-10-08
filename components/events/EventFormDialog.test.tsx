@@ -35,6 +35,8 @@ function mockOrgs(list: typeof orgs) {
     error: null,
     loading: false,
     refresh: vi.fn(),
+    fromSnapshot: false,
+    savedAt: null,
   })
 }
 
@@ -240,6 +242,8 @@ describe("EventFormDialog", () => {
       error: null,
       loading: false,
       refresh: vi.fn(),
+      fromSnapshot: false,
+      savedAt: null,
     })
     renderDialog()
     fireEvent.click(screen.getByRole("button", { name: /new event/i }))

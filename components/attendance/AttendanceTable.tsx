@@ -29,7 +29,7 @@ export function AttendanceTable({
     setPrevKey(`${eventId}:${filterKey}`)
     setPage(1)
   }
-  const { data, error, loading } = useAttendance(
+  const { data, error, loading, fromSnapshot, savedAt } = useAttendance(
     eventId,
     filters,
     page,
@@ -121,6 +121,9 @@ export function AttendanceTable({
         <p className="text-muted-foreground" aria-live="polite">
           Page {view.page} of {view.pages} · {view.total} records
           {fetching ? " · Loading…" : ""}
+          {fromSnapshot && savedAt !== null
+            ? ` · Saved copy ${formatTimeOnly(new Date(savedAt).toISOString())}`
+            : ""}
         </p>
         <div className="flex flex-wrap items-center gap-2">
           <Button
