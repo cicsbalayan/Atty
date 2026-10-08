@@ -63,4 +63,12 @@ describe("scan queue", () => {
     const list = await queue.pending("EVT-1")
     expect(list.map((s) => s.status)).toEqual(["queued"])
   })
+
+  it("excludes syncing scans from pendingCount", async () => {
+    const queue = setup()
+    const scan = await queue.enqueue("EVT-1", "26-00001", 1)
+    await queue.markSyncing(scan.id)
+    expect(await queue.pending("EVT-1")).toEqual([])
+    expect(await queue.pendingCount("EVT-1")).toBe(0)
+  })
 })

@@ -75,7 +75,7 @@ export function createScanQueue(storage: OfflineStorage): ScanQueue {
         const scan = await storage.get<QueuedScan>(SCANS, key)
         if (
           scan &&
-          scan.status !== "done" &&
+          (scan.status === "queued" || scan.status === "failed") &&
           (!eventId || scan.eventId === eventId)
         ) {
           count += 1
