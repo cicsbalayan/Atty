@@ -31,7 +31,7 @@
 | Create `lib/offline/snapshots.ts` | `SnapshotStore`: save/load snapshots with `savedAt`, entry cap |
 | Create `lib/offline/snapshots.test.ts` | Snapshot tests on the in-memory backend |
 | Create `hooks/useOnline.ts` | Connectivity boolean from online/offline events |
-| Create `hooks/useOnline.test.ts` | jsdom event-dispatch tests |
+| Create `hooks/useOnline.test.tsx` | jsdom event-dispatch tests |
 | Create `lib/offline/sync.ts` | `syncQueue` replay engine with per-scan outcomes |
 | Create `lib/offline/sync.test.ts` | Engine tests on mocked record fn |
 | Create `components/offline/OfflineBanner.tsx` | App-wide offline banner |
@@ -529,7 +529,7 @@ git commit -m "feat(offline): snapshot store with saved-at stamps and cap"
 
 **Files:**
 - Create: `hooks/useOnline.ts`
-- Test: `hooks/useOnline.test.ts`
+- Test: `hooks/useOnline.test.tsx`
 
 **Interfaces:**
 - Consumes: nothing.
@@ -569,7 +569,7 @@ describe("useOnline", () => {
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `npx vitest run hooks/useOnline.test.ts`
+Run: `npx vitest run hooks/useOnline.test.tsx`
 Expected: FAIL with "Failed to resolve import ./useOnline".
 
 - [ ] **Step 3: Write minimal implementation**
@@ -599,13 +599,13 @@ export function useOnline(): boolean {
 
 - [ ] **Step 4: Run test to verify it passes**
 
-Run: `npx vitest run hooks/useOnline.test.ts`
+Run: `npx vitest run hooks/useOnline.test.tsx`
 Expected: PASS.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add hooks/useOnline.ts hooks/useOnline.test.ts
+git add hooks/useOnline.ts hooks/useOnline.test.tsx
 git commit -m "feat(offline): connectivity hook from browser online events"
 ```
 
