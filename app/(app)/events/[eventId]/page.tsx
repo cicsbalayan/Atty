@@ -14,6 +14,7 @@ import { EventStatusBadge } from "@/components/events/EventStatusBadge"
 import { AttendanceFilters } from "@/components/attendance/AttendanceFilters"
 import { AttendanceTable } from "@/components/attendance/AttendanceTable"
 import { RefreshButton } from "@/components/attendance/RefreshButton"
+import { QueueSyncPanel } from "@/components/offline/QueueSyncPanel"
 import { ExportButton } from "@/components/attendance/ExportButton"
 import { ReportSummary } from "@/components/reports/ReportSummary"
 import { FilterSkeleton } from "@/components/attendance/FilterSkeleton"
@@ -161,6 +162,7 @@ export default async function EventDetailPage({
             ) : null}
             <ExportButton eventId={event.id} filters={filters} />
             <RefreshButton />
+            <QueueSyncPanel eventId={event.id} />
             <span className="sm:ml-auto">
               <EventActions event={event} />
             </span>
