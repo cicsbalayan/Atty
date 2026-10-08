@@ -85,9 +85,18 @@ export function CheckInForm({
       }
     } catch (err) {
       if (err instanceof TypeError) {
-        await getSharedQueue().enqueue(eventId, code, Date.now())
-        setOutcome({ kind: "queued", srcode: code })
-        return
+        let enqueueFailed = false
+        try {
+          await getSharedQueue().enqueue(eventId, code, Date.now())
+        } catch {
+          enqueueFailed = true
+        }
+        if (!enqueueFailed) {
+          setError(null)
+          setOutcome({ kind: "queued", srcode: code })
+          return
+        }
+        // Storage/quota failure: fall through to the generic error branch.
       }
       setOutcome({ kind: "idle" })
       setError(
