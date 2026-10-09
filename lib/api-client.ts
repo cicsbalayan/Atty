@@ -5,11 +5,14 @@ import type {
   AttendanceRecordResponse,
   EventResponse,
   EventsResponse,
+  OrganizationResponse,
+  OrganizationsResponse,
   ReportResponse,
   StudentResponse,
 } from "@/models/api"
 import type { AttendanceFilters } from "@/lib/attendance"
 import type { CreateEventInput, UpdateEventInput } from "@/models/event"
+import type { CreateOrganizationInput } from "@/models/organization"
 
 /** Result of a sign-in attempt. */
 export type LoginResponse = { success: true } | ApiFailure
@@ -31,8 +34,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
   })
   const data = (await res.json().catch(() => null)) as
-    | (T & { success?: boolean; code?: string; message?: string })
-    | null
+    (T & { success?: boolean; code?: string; message?: string }) | null
   if (!data || data.success === false) {
     const failure = data as unknown as ApiFailure | null
     throw new ApiError(
@@ -64,7 +66,11 @@ export async function login(pin: string): Promise<LoginResponse> {
   })
   const data = (await res.json().catch(() => null)) as LoginResponse | null
   if (!data) {
-    return { success: false, code: "INTERNAL_ERROR", message: "Could not sign in." }
+    return {
+      success: false,
+      code: "INTERNAL_ERROR",
+      message: "Could not sign in.",
+    }
   }
   return data
 }
@@ -75,14 +81,28 @@ export async function logout(): Promise<void> {
 }
 
 export function getEvent(eventId: string): Promise<EventResponse> {
-  return request<EventResponse>(
-    `/api/events/${encodeURIComponent(eventId)}`,
-    { cache: "no-store" }
-  )
+  return request<EventResponse>(`/api/events/${encodeURIComponent(eventId)}`, {
+    cache: "no-store",
+  })
 }
 
 export function createEvent(input: CreateEventInput): Promise<EventResponse> {
   return request<EventResponse>("/api/events", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })
+}
+
+export function listOrganizations(): Promise<OrganizationsResponse> {
+  return request<OrganizationsResponse>("/api/organizations", {
+    cache: "no-store",
+  })
+}
+
+export function createOrganization(
+  input: CreateOrganizationInput
+): Promise<OrganizationResponse> {
+  return request<OrganizationResponse>("/api/organizations", {
     method: "POST",
     body: JSON.stringify(input),
   })
@@ -113,7 +133,8 @@ export function updateEvent(
 
 export function listAttendance(
   eventId: string,
-  filters?: AttendanceFilters
+  filters?: AttendanceFilters,
+  pagination?: { page: number; pageSize: number }
 ): Promise<AttendanceListResponse> {
   const params = new URLSearchParams()
   if (filters?.q) params.set("q", filters.q)
@@ -121,6 +142,10 @@ export function listAttendance(
   if (filters?.program) params.set("program", filters.program)
   if (filters?.yearLevel) params.set("yearLevel", filters.yearLevel)
   if (filters?.gender) params.set("gender", filters.gender)
+  if (pagination) {
+    params.set("page", String(pagination.page))
+    params.set("pageSize", String(pagination.pageSize))
+  }
   const qs = params.toString()
   return request<AttendanceListResponse>(
     `/api/events/${encodeURIComponent(eventId)}/attendance${qs ? `?${qs}` : ""}`,
@@ -162,7 +187,10 @@ export function lookupStudent(srcode: string): Promise<StudentResponse> {
   })
 }
 
-export function exportUrl(eventId: string, filters?: AttendanceFilters): string {
+export function exportUrl(
+  eventId: string,
+  filters?: AttendanceFilters
+): string {
   const params = new URLSearchParams()
   if (filters?.q) params.set("q", filters.q)
   if (filters?.college) params.set("college", filters.college)

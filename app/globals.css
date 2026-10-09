@@ -485,6 +485,11 @@
   }
   .animate-clay-pop { animation: clay-pop 280ms ease both; }
   .animate-clay-ring { animation: clay-ring 900ms ease-out 2; }
+  @keyframes toast-in {
+    0% { transform: translateY(12px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  .animate-toast-in { animation: toast-in 220ms ease both; }
   /* Kiosk focus mode: hide app chrome while any element is fullscreen,
      then center the remaining content with room to breathe.
      NOTE: these live outside @layer on purpose — layered utilities
@@ -495,7 +500,7 @@
   .donut-seg:focus-visible { outline: none; filter: brightness(1.12); }
   @media (prefers-reduced-motion: reduce) {
     .clay-btn, .clay-btn:hover { transition: none; transform: none; }
-    .animate-clay-pop, .animate-clay-ring { animation: none; }
+    .animate-clay-pop, .animate-clay-ring, .animate-toast-in { animation: none; }
     .donut-seg { transition: none; }
   }
 }
@@ -523,12 +528,79 @@
   margin-inline: auto;
 }
 
+/* ---- Report paper sheet (screen preview, UNLAYERED) ----
+   The on-screen preview renders the document at true legal-landscape size:
+   14in wide = 1344px, with 1.27cm (= 0.5in = 48px) of paper margin as
+   padding, so content width on screen (1344 - 96 = 1248px) is exactly the
+   printable width and wrapping matches the printed page. In print this
+   collapses: the @page margins below provide the margins instead, so the
+   padding must be zeroed there to avoid doubling them. */
+.print-sheet {
+  /* Fixed legal width, not width:100%: the sheet lives inside the app shell
+     next to the sidebar, so a fluid width would squeeze it to whatever the
+     shell allows (measured 678px on a typical viewport) instead of legal
+     size. Fixed px is viewport-independent; narrower viewports scroll
+     horizontally to it. margin-inline centers it whenever there is room. */
+  width: 1344px;
+  /* Strict legal sheet: exactly one landscape page tall (8.5in = 816px) no
+     matter how little content the table holds. Overflow rows never stretch
+     this box; the paginator flows them onto additional sheets instead. */
+  height: 816px;
+  margin-inline: auto;
+  padding: 1.27cm;
+  background: #fff;
+  color: #000;
+  box-shadow: 0 8px 32px rgb(15 23 42 / 0.12);
+}
+/* Fixed content box inside the sheet: 816 - 48 (top margin) - 91 (2.4cm
+   bottom band) = 677. The footer below it always lands in the band. */
+.print-sheet-body {
+  height: 677px;
+}
+/* In-flow footer clearance, one per chunk, screen and print alike (so the
+   measured heights already include it). Empty and invisible; its only job is
+   occupying the strip the fixed footer paints over. break-before avoid keeps
+   it glued to its rows so it can never strand alone atop a page. */
+.print-spacer {
+  height: 32px;
+  break-before: avoid;
+}
+/* Screen-only footer, one per sheet, in flow. Hidden in print, where the
+   pinned .report-footer takes over at the sheet edge. */
+.report-footer-screen {
+  display: block;
+}
+/* Footers are layout boxes, not prose: exempt both from the global
+   `p { max-width: 65ch }` readability rule, which would otherwise clamp them
+   to ~582px inside the 1248px sheet and strand them left of center. Placed
+   here, unlayered, so it beats the layered base rule with no !important. */
+.report-footer-screen,
+.report-footer {
+  max-width: none;
+}
+/* The print footer never renders on screen: each sheet already carries its
+   own in-flow footer above. Scoped to `@media screen` on purpose -- a base
+   `display: none` here would win over the print block below (CSS 2.1 section
+   9.7 keeps `display: none` even under `position: fixed`), hiding the footer
+   on paper too. With screen-only hiding, print sees no display declaration
+   at all and the fixed box renders normally. */
+@media screen {
+  .report-footer {
+    display: none;
+  }
+}
+
 /* ---- Official report printing (UNLAYERED) ----
-   Legal landscape, 1.27cm narrow margins, app chrome hidden. */
+   Legal landscape, 1.27cm narrow margins (2.4cm bottom band reserved for the
+   pinned footer), app chrome hidden. */
 @media print {
   @page {
     size: legal landscape;
-    margin: 1.27cm;
+    /* The enlarged bottom margin is a reserved band that only the pinned
+       footer occupies. Table content stops at the page content box, so no row
+       can reach the band, and the band keeps the footer clear of the printer's
+       own non-printable edge. */
+    margin: 1.27cm 1.27cm 2.4cm;
   }
   .app-chrome,
   .no-print {
@@ -540,22 +612,62 @@
   .app-shell {
     padding: 0 !important;
   }
+  /* Single column in print, always: with the sidebar hidden, the two-track
+     `lg:grid-cols-[240px_1fr]` template can strand `main` in the 240px track
+     whenever the print engine evaluates the `lg:` breakpoint as matching
+     (paper-width dependent, so configuration-dependent). That squeezes the
+     whole report into 240px, fragments every row mid-word, and paginates
+     garbage. One track removes the hazard structurally. Unlayered, so it
+     beats the layered Tailwind variant with no !important. */
+  .app-shell-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   main {
     display: block !important;
     min-height: auto !important;
     padding: 0 !important;
   }
+  /* Screen paper presentation collapses in print: the @page margins own the
+     margins now, and the sheet must not constrain or shadow the output. */
+  .print-sheet {
+    /* width:auto is load-bearing here: the screen width is a fixed 1344px,
+       which would overflow the 1248px printable area if it survived print. */
+    width: auto;
+    max-width: none;
+    height: auto;
+    margin: 0;
+    padding: 0;
+    box-shadow: none;
+  }
+  .print-sheet-body {
+    height: auto;
+  }
+  /* No forced breaks anywhere in print: chunks were measured and packed for
+     one specific geometry, so forcing their boundaries under any other paper,
+     orientation, or margin choice strands half-empty pages (and the fixed
+     footer with them). Content flows naturally in every configuration;
+     headers repeat per table, rows refuse to split, and the fixed footer
+     still pins every page without ever overlapping rows. */
+  .report-footer-screen {
+    display: none;
+  }
   .print-table thead {
     display: table-header-group;
   }
-  /* Pinned footer: parked inside the bottom margin (negative offset from
-     the content area), so it repeats at the same spot every page and no
-     table row can ever slide under it. */
+  /* Pinned footer. `position: fixed` repeats it on every printed page while
+     keeping it out of the document flow, so pagination can never break it
+     onto a sheet of its own. `bottom: 0` seats its bottom edge exactly on the
+     sheet's bottom edge -- inside the reserved 2.4cm bottom band, roughly 2cm
+     clear of where table content can reach (content stops at the content-box
+     edge). A negative offset must never be used here: it pushes the footer
+     below the sheet, and Chrome then paints it overlapping the table instead
+     of in the margin. */
   .report-footer {
     position: fixed;
-    bottom: -0.9cm;
+    bottom: 0;
     left: 0;
     right: 0;
+    text-align: center;
   }
   .print-table tr {
     break-inside: avoid;

@@ -1,7 +1,9 @@
-import { getEventsCached } from "@/integration/cached"
+import { getEventsCached, getOrganizationsCached } from "@/integration/cached"
 import { EventSection } from "@/components/dashboard/EventSection"
 import { StatCards } from "@/components/dashboard/StatCards"
 import { requireAdminPage } from "@/lib/auth/dal"
+
+export const metadata = { title: "Dashboard" }
 
 /**
  * Rendered per request rather than prerendered at build time: the data
@@ -26,6 +28,12 @@ export default async function DashboardPage() {
   const upcoming = events.filter((e) => e.status === "Upcoming")
   const closed = events.filter((e) => e.status === "Closed")
 
+  // One cached read resolves every card's organization name; unknown or
+  // missing orgs simply render no org row.
+  const orgNames: Record<string, string> = Object.fromEntries(
+    (await getOrganizationsCached().catch(() => [])).map((o) => [o.id, o.name])
+  )
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -37,9 +45,9 @@ export default async function DashboardPage() {
         </p>
       ) : null}
       <StatCards active={active.length} upcoming={upcoming.length} closed={closed.length} />
-      <EventSection title="Active events" events={active} empty="No active events. Mark an upcoming event Active to start check-ins." />
-      <EventSection title="Upcoming events" events={upcoming} empty="No upcoming events." />
-      <EventSection title="Closed events" events={closed} empty="No closed events." />
+      <EventSection title="Active events" events={active} empty="No active events. Mark an upcoming event Active to start check-ins." orgNames={orgNames} />
+      <EventSection title="Upcoming events" events={upcoming} empty="No upcoming events." orgNames={orgNames} />
+      <EventSection title="Closed events" events={closed} empty="No closed events." orgNames={orgNames} />
     </div>
   )
 }

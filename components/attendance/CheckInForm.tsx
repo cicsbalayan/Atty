@@ -14,12 +14,14 @@ import {
   SRCODE_MAX_LENGTH,
 } from "@/lib/format"
 import type { Student } from "@/models/student"
+import { getSharedQueue } from "@/lib/offline/shared"
 
 type Outcome =
   | { kind: "idle" }
   | { kind: "confirm"; student: Student }
   | { kind: "duplicate"; message: string; timestamp?: string }
   | { kind: "done"; student: Student; timestamp: string }
+  | { kind: "queued"; srcode: string }
 
 function Detail({ label, value }: { label: string; value: string }) {
   return (
@@ -82,6 +84,20 @@ export function CheckInForm({
         setOutcome({ kind: "confirm", student: res.check.student })
       }
     } catch (err) {
+      if (err instanceof TypeError) {
+        let enqueueFailed = false
+        try {
+          await getSharedQueue().enqueue(eventId, code, Date.now())
+        } catch {
+          enqueueFailed = true
+        }
+        if (!enqueueFailed) {
+          setError(null)
+          setOutcome({ kind: "queued", srcode: code })
+          return
+        }
+        // Storage/quota failure: fall through to the generic error branch.
+      }
       setOutcome({ kind: "idle" })
       setError(
         err instanceof ApiError && err.code === "SRCODE_NOT_FOUND"
@@ -103,14 +119,42 @@ export function CheckInForm({
     setRecording(true)
     try {
       const res = await recordAttendance(eventId, student.srcode)
-      setOutcome({ kind: "done", student: res.student, timestamp: res.timestamp })
+      setOutcome({
+        kind: "done",
+        student: res.student,
+        timestamp: res.timestamp,
+      })
       setSrcode("")
     } catch (err) {
+      // Mirror the lookup path: a network-layer failure queues the scan
+      // instead of erroring, so a dropout between verify and confirm
+      // never loses the attendance.
+      if (err instanceof TypeError) {
+        let enqueueFailed = false
+        try {
+          await getSharedQueue().enqueue(eventId, student.srcode, Date.now())
+        } catch {
+          enqueueFailed = true
+        }
+        if (!enqueueFailed) {
+          setError(null)
+          setOutcome({ kind: "queued", srcode: student.srcode })
+          return
+        }
+        // Storage/quota failure: fall through to the generic error branch.
+      }
       if (err instanceof ApiError && err.code === "DUPLICATE_ATTENDANCE") {
-        setOutcome({ kind: "duplicate", message: "Attendance already recorded for this event." })
+        setOutcome({
+          kind: "duplicate",
+          message: "Attendance already recorded for this event.",
+        })
       } else {
         setOutcome({ kind: "idle" })
-        setError(err instanceof ApiError ? err.message : "Check-in failed. Please try again.")
+        setError(
+          err instanceof ApiError
+            ? err.message
+            : "Check-in failed. Please try again."
+        )
       }
     } finally {
       setRecording(false)
@@ -150,7 +194,11 @@ export function CheckInForm({
               disabled={!eventActive || busy}
               className="h-14 text-center font-mono text-xl tracking-widest"
             />
-            <Button type="submit" disabled={!eventActive || busy || !srcode.trim()} className="clay-btn clay-btn-primary h-12 text-base">
+            <Button
+              type="submit"
+              disabled={!eventActive || busy || !srcode.trim()}
+              className="clay-btn clay-btn-primary h-12 text-base"
+            >
               <ScanLine className="size-5" aria-hidden />
               {validating ? "Validating…" : "Validate SR Code"}
             </Button>
@@ -160,7 +208,10 @@ export function CheckInForm({
               </p>
             ) : null}
             {error ? (
-              <p role="alert" className="clay-pressed p-4 text-sm text-destructive">
+              <p
+                role="alert"
+                className="clay-pressed p-4 text-sm text-destructive"
+              >
                 {error}
               </p>
             ) : null}
@@ -182,15 +233,25 @@ export function CheckInForm({
                   <Detail label="Course" value={outcome.student.program} />
                   <Detail label="SR Code" value={outcome.student.srcode} />
                 </div>
-                <p className="text-sm text-muted-foreground text-center">
-                  Please confirm your attendance for <strong>{eventName}</strong>.
+                <p className="text-center text-sm text-muted-foreground">
+                  Please confirm your attendance for{" "}
+                  <strong>{eventName}</strong>.
                 </p>
                 <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button onClick={() => void onConfirm()} disabled={recording} className="clay-btn clay-btn-primary h-12 flex-1 text-base">
+                  <Button
+                    onClick={() => void onConfirm()}
+                    disabled={recording}
+                    className="clay-btn clay-btn-primary h-12 flex-1 text-base"
+                  >
                     <CircleCheck className="size-5" aria-hidden />
                     {recording ? "Recording…" : "Confirm Attendance"}
                   </Button>
-                  <Button variant="outline" onClick={cancelConfirm} disabled={recording} className="clay-btn h-12">
+                  <Button
+                    variant="outline"
+                    onClick={cancelConfirm}
+                    disabled={recording}
+                    className="clay-btn h-12"
+                  >
                     <Undo2 className="size-4" aria-hidden /> Back
                   </Button>
                 </div>
@@ -211,7 +272,10 @@ export function CheckInForm({
                   <Detail label="Department" value={outcome.student.college} />
                   <Detail label="Course" value={outcome.student.program} />
                   <Detail label="Event" value={eventName} />
-                  <Detail label="Date & Time" value={formatTimestamp(outcome.timestamp)} />
+                  <Detail
+                    label="Date & Time"
+                    value={formatTimestamp(outcome.timestamp)}
+                  />
                   <Detail label="Status" value="Present" />
                 </div>
               </div>
@@ -224,7 +288,10 @@ export function CheckInForm({
             <CardContent>
               <div className="animate-clay-pop flex flex-col gap-3">
                 <p className="clay-pressed flex items-start gap-2 p-4 text-sm">
-                  <TriangleAlert className="mt-0.5 size-4 shrink-0 text-amber-600" aria-hidden />
+                  <TriangleAlert
+                    className="mt-0.5 size-4 shrink-0 text-amber-600"
+                    aria-hidden
+                  />
                   <span>
                     {outcome.message}
                     {outcome.timestamp ? (
@@ -232,6 +299,27 @@ export function CheckInForm({
                         Checked in at {formatTimestamp(outcome.timestamp)}
                       </span>
                     ) : null}
+                  </span>
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
+
+        {outcome.kind === "queued" ? (
+          <Card>
+            <CardContent>
+              <div className="animate-clay-pop flex flex-col gap-3">
+                <p className="clay-pressed flex items-start gap-2 p-4 text-sm">
+                  <TriangleAlert
+                    className="mt-0.5 size-4 shrink-0 text-amber-600"
+                    aria-hidden
+                  />
+                  <span>
+                    Queued — will sync when reconnected.
+                    <span className="block text-muted-foreground">
+                      {outcome.srcode}
+                    </span>
                   </span>
                 </p>
               </div>

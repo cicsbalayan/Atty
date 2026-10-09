@@ -1,7 +1,13 @@
 "use client"
 
 import * as React from "react"
-import { getEvent, listAttendance, listEvents, getReport } from "@/lib/api-client"
+import {
+  getEvent,
+  listAttendance,
+  listEvents,
+  getReport,
+  listOrganizations,
+} from "@/lib/api-client"
 import type { AttendanceFilters } from "@/lib/attendance"
 import { invalidatePrefix, useCached } from "./useCached"
 
@@ -10,6 +16,16 @@ export function useEvents() {
   const refresh = React.useCallback(() => {
     invalidatePrefix("events:")
     invalidatePrefix("dashboard:")
+    result.refresh()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [result.refresh])
+  return { ...result, refresh }
+}
+
+export function useOrganizations() {
+  const result = useCached("organizations:all", listOrganizations, 30_000)
+  const refresh = React.useCallback(() => {
+    invalidatePrefix("organizations:")
     result.refresh()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [result.refresh])
@@ -31,13 +47,25 @@ export function useEvent(eventId: string | null) {
   return { ...result, refresh }
 }
 
-export function useAttendance(eventId: string | null, filters?: AttendanceFilters) {
+export function useAttendance(
+  eventId: string | null,
+  filters?: AttendanceFilters,
+  page?: number,
+  pageSize?: number
+) {
+  const paginationKey = `${page ?? 1}:${pageSize ?? 50}`
   const key = eventId
-    ? `attendance:${eventId}:${JSON.stringify(filters ?? {})}`
+    ? `attendance:${eventId}:${JSON.stringify(filters ?? {})}:${paginationKey}`
     : null
   const result = useCached(
     key,
-    eventId ? () => listAttendance(eventId, filters) : null,
+    eventId
+      ? () =>
+          listAttendance(eventId, filters, {
+            page: page ?? 1,
+            pageSize: pageSize ?? 50,
+          })
+      : null,
     10_000
   )
   const refresh = React.useCallback(() => {

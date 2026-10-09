@@ -4,30 +4,94 @@ import * as React from "react"
 import { useRouter } from "next/navigation"
 import { Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { Input, Label } from "@/components/ui/input"
+import Link from "next/link"
 import { ApiError, createEvent } from "@/lib/api-client"
+import { formatEventDate, formatTimeInput } from "@/lib/format"
+import { useOrganizations } from "@/hooks/useQueries"
+import { useToast } from "@/components/ui/toast"
+import { ClaySelect } from "@/components/ui/select"
 import { invalidatePrefix } from "@/hooks/useCached"
 
 export function EventFormDialog() {
   const router = useRouter()
+  const toast = useToast()
   const [open, setOpen] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
   const [saving, setSaving] = React.useState(false)
 
+  const {
+    data: orgData,
+    loading: orgsLoading,
+    error: orgsError,
+    refresh: refreshOrgs,
+  } = useOrganizations()
+  const orgs = orgData?.organizations ?? []
+  const [orgId, setOrgId] = React.useState("")
+  const loadFailed = !orgsLoading && orgsError != null
+
+  function close() {
+    setOrgId("")
+    setError(null)
+    setOpen(false)
+  }
+
   async function onSubmit(form: FormData) {
+    if (!orgId) {
+      setError("Select an organizer.")
+      return
+    }
+    // A range serializes into the single backend date string. One date
+    // stays ISO so every existing display keeps working; a range stores
+    // the pretty form, which formatEventDate renders verbatim.
+    const start = String(form.get("dateStart") ?? "")
+    const end = String(form.get("dateEnd") ?? "").trim()
+    if (end && end < start) {
+      setError("End date must be on or after the start date.")
+      return
+    }
+    const date =
+      end && end !== start
+        ? `${formatEventDate(start)} - ${formatEventDate(end)}`
+        : start
+    // Times serialize into the single backend string, formatted to the
+    // 12-hour display style every existing event uses. An end without a
+    // start is refused; a start without an end stands alone. Overnight
+    // ranges are legitimate (e.g. "12:00 pm - 1:00 am"), so end-before-start
+    // is allowed, unlike dates.
+    const timeStart = String(form.get("timeStart") ?? "")
+    const timeEnd = String(form.get("timeEnd") ?? "").trim()
+    if (timeEnd && !timeStart) {
+      setError("Select a start time first.")
+      return
+    }
+    let time = ""
+    if (timeStart) {
+      time = formatTimeInput(timeStart)
+      if (timeEnd) time += ` - ${formatTimeInput(timeEnd)}`
+    }
     setSaving(true)
     setError(null)
     try {
       await createEvent({
         name: String(form.get("name") ?? ""),
-        date: String(form.get("date") ?? ""),
+        date,
         location: String(form.get("location") ?? ""),
         description: String(form.get("description") ?? ""),
+        orgId,
+        time,
       })
       invalidatePrefix("events:")
       invalidatePrefix("dashboard:")
-      setOpen(false)
+      close()
+      toast.success("Event created.")
       router.refresh()
     } catch (e) {
       setError(e instanceof ApiError ? e.message : "Could not create event.")
@@ -37,37 +101,124 @@ export function EventFormDialog() {
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog
+      open={open}
+      onOpenChange={(next) => {
+        if (!next) {
+          setOrgId("")
+          setError(null)
+        }
+        setOpen(next)
+      }}
+    >
       <DialogTrigger
-        render={<Button className="clay-btn clay-btn-primary"><Plus className="size-4" aria-hidden /> New Event</Button>}
+        render={
+          <Button className="clay-btn clay-btn-primary">
+            <Plus className="size-4" aria-hidden /> New Event
+          </Button>
+        }
       />
       <DialogContent>
         <DialogTitle>Create event</DialogTitle>
-        <DialogDescription>Sheet tab is auto-created as the Event ID (e.g. EVT-001).</DialogDescription>
+        <DialogDescription>
+          Sheet tab is auto-created as the Event ID (e.g. EVT-001).
+        </DialogDescription>
         <form
           className="mt-4 flex flex-col gap-3"
           action={(form) => void onSubmit(form)}
         >
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="name">Event name</Label>
-            <Input id="name" name="name" required maxLength={150} placeholder="Freshmen Orientation" />
+            <Input
+              id="name"
+              name="name"
+              required
+              maxLength={150}
+              placeholder="Freshmen Orientation"
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="date">Event date</Label>
-              <Input id="date" name="date" type="date" required />
+              <Label htmlFor="dateStart">Start date</Label>
+              <Input id="dateStart" name="dateStart" type="date" required />
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="location">Location</Label>
-              <Input id="location" name="location" maxLength={150} placeholder="Gym" />
+              <Label htmlFor="dateEnd">End date</Label>
+              <Input
+                id="dateEnd"
+                name="dateEnd"
+                type="date"
+                aria-describedby="dateEnd-hint"
+              />
+              <p id="dateEnd-hint" className="text-xs text-muted-foreground">
+                Optional — leave blank for one-day events.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="location">Location</Label>
+            <Input
+              id="location"
+              name="location"
+              maxLength={150}
+              placeholder="Gym"
+            />
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="org">Organizer</Label>
+            {orgs.length === 0 && !orgsLoading ? (
+              <p role="alert" className="text-sm text-destructive">
+                No organizers yet. Add one on the{" "}
+                <Link
+                  href="/organizations"
+                  className="underline underline-offset-4"
+                >
+                  Organizers page
+                </Link>{" "}
+                first.
+              </p>
+            ) : (
+              <ClaySelect
+                id="org"
+                value={orgs.find((o) => o.id === orgId)?.name ?? ""}
+                onChange={(name) =>
+                  setOrgId(orgs.find((o) => o.name === name)?.id ?? "")
+                }
+                placeholder="Select an organizer"
+                options={orgs.map((o) => o.name)}
+                allLabel="Select an organizer"
+              />
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="timeStart">Start time</Label>
+              <Input id="timeStart" name="timeStart" type="time" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="timeEnd">End time</Label>
+              <Input id="timeEnd" name="timeEnd" type="time" />
             </div>
           </div>
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="description">Description</Label>
-            <Input id="description" name="description" maxLength={500} placeholder="Optional notes" />
+            <Input
+              id="description"
+              name="description"
+              maxLength={500}
+              placeholder="Optional notes"
+            />
           </div>
-          {error ? <p role="alert" className="text-sm text-destructive">{error}</p> : null}
-          <Button type="submit" disabled={saving} className="clay-btn mt-1">
+          {error ? (
+            <p role="alert" className="text-sm text-destructive">
+              {error}
+            </p>
+          ) : null}
+          <Button
+            type="submit"
+            disabled={saving || (!orgsLoading && orgs.length === 0)}
+            className="clay-btn mt-1"
+          >
             {saving ? "Creating…" : "Create event"}
           </Button>
         </form>

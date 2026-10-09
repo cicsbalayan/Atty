@@ -13,7 +13,7 @@
 "use client"
 
 import * as React from "react"
-import { LockKeyhole } from "lucide-react"
+import { LogOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { logout } from "@/lib/api-client"
 
@@ -41,14 +41,11 @@ export function LockButton() {
   return (
     <Button
       variant="outline"
-      size="icon"
       onClick={() => void onClick()}
       disabled={busy}
-      aria-label="Lock and sign out"
-      title="Lock and sign out"
       className="clay-btn rounded-full"
     >
-      <LockKeyhole className="size-4" aria-hidden />
+      <LogOut className="size-4" aria-hidden /> Log out
     </Button>
   )
 }
