@@ -22,11 +22,20 @@ export function createSnapshotStore(
       try {
         await storage.set(SNAPSHOTS, key, { data, savedAt: Date.now() })
         const keys = await storage.keys(SNAPSHOTS)
-        for (const extra of keys.slice(
-          0,
-          Math.max(0, keys.length - maxEntries)
-        )) {
-          await storage.del(SNAPSHOTS, extra)
+        if (keys.length <= maxEntries) return
+        // getAllKeys returns sorted keys, not insertion order, so evict by
+        // the oldest savedAt stamp instead of key position.
+        const stamped: { key: string; savedAt: number }[] = []
+        for (const k of keys) {
+          const envelope = await storage.get<SnapshotEnvelope<never>>(
+            SNAPSHOTS,
+            k
+          )
+          stamped.push({ key: k, savedAt: envelope?.savedAt ?? 0 })
+        }
+        stamped.sort((a, b) => a.savedAt - b.savedAt)
+        for (const extra of stamped.slice(0, keys.length - maxEntries)) {
+          await storage.del(SNAPSHOTS, extra.key)
         }
       } catch {
         // Snapshots are best-effort: a quota error must never break a read.
@@ -39,8 +48,12 @@ export function createSnapshotStore(
         return null
       }
     },
-    clear() {
-      return storage.clear(SNAPSHOTS)
+    async clear() {
+      try {
+        await storage.clear(SNAPSHOTS)
+      } catch {
+        // Best-effort like save/load: clearing must never throw.
+      }
     },
   }
 }

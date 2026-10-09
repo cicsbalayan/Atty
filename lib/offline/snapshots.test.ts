@@ -25,6 +25,24 @@ describe("snapshot store", () => {
     expect(await snapshots.load("c")).not.toBeNull()
   })
 
+  it("evicts by oldest savedAt, not key order", async () => {
+    let now = 1000
+    const spy = vi.spyOn(Date, "now").mockImplementation(() => now)
+    try {
+      const snapshots = createSnapshotStore(createMemoryStorage(), 2)
+      await snapshots.save("c", 3)
+      now += 1
+      await snapshots.save("a", 1)
+      now += 1
+      await snapshots.save("b", 2)
+      // Sorted keys are [a, b, c]; only savedAt order evicts "c".
+      expect(await snapshots.load("c")).toBeNull()
+      expect(await snapshots.load("a")).not.toBeNull()
+      expect(await snapshots.load("b")).not.toBeNull()
+    } finally {
+      spy.mockRestore()
+    }
+  })
   it("never throws when storage fails", async () => {
     const broken = createMemoryStorage()
     vi.spyOn(broken, "set").mockRejectedValue(new Error("quota"))

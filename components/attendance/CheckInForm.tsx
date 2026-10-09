@@ -126,6 +126,23 @@ export function CheckInForm({
       })
       setSrcode("")
     } catch (err) {
+      // Mirror the lookup path: a network-layer failure queues the scan
+      // instead of erroring, so a dropout between verify and confirm
+      // never loses the attendance.
+      if (err instanceof TypeError) {
+        let enqueueFailed = false
+        try {
+          await getSharedQueue().enqueue(eventId, student.srcode, Date.now())
+        } catch {
+          enqueueFailed = true
+        }
+        if (!enqueueFailed) {
+          setError(null)
+          setOutcome({ kind: "queued", srcode: student.srcode })
+          return
+        }
+        // Storage/quota failure: fall through to the generic error branch.
+      }
       if (err instanceof ApiError && err.code === "DUPLICATE_ATTENDANCE") {
         setOutcome({
           kind: "duplicate",

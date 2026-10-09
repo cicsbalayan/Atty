@@ -153,9 +153,13 @@ export function useCached<T>(
       .catch((error: Error) => {
         inflight.delete(currentKey)
         void (async () => {
-          const snapshot = isSnapshotable(currentKey)
-            ? await getSharedSnapshots().load<T>(currentKey)
-            : null
+          // Only network-layer failures (fetch rejects with TypeError)
+          // fall back to a snapshot. HTTP/API errors (401s included) must
+          // surface exactly as before, never masked as a saved copy.
+          const snapshot =
+            error instanceof TypeError && isSnapshotable(currentKey)
+              ? await getSharedSnapshots().load<T>(currentKey)
+              : null
           if (snapshot) {
             cache.set(currentKey, {
               data: snapshot.data,

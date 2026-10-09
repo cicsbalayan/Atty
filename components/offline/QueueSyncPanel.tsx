@@ -16,6 +16,7 @@ export function QueueSyncPanel({ eventId }: { eventId: string }) {
   function handleReport(next: SyncReport) {
     if (
       !next.pausedAuth &&
+      next.results.length > 0 &&
       next.results.every(
         (r) => r.outcome === "recorded" || r.outcome === "already-present"
       )

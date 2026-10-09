@@ -122,7 +122,7 @@ export function AttendanceTable({
           Page {view.page} of {view.pages} · {view.total} records
           {fetching ? " · Loading…" : ""}
           {fromSnapshot && savedAt !== null
-            ? ` · Saved copy ${formatTimeOnly(new Date(savedAt).toISOString())}`
+            ? ` · Saved copy from ${formatTimeOnly(new Date(savedAt).toISOString())}`
             : ""}
         </p>
         <div className="flex flex-wrap items-center gap-2">

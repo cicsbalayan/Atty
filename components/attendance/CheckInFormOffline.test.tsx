@@ -11,7 +11,10 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { CheckInForm } from "./CheckInForm"
 import { ApiError, checkAttendance, recordAttendance } from "@/lib/api-client"
-import { getSharedQueue } from "@/lib/offline/shared"
+import {
+  getSharedQueue,
+  resetSharedOfflineForTests,
+} from "@/lib/offline/shared"
 
 vi.mock("@/lib/api-client", () => ({
   checkAttendance: vi.fn(),
@@ -31,6 +34,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 
 describe("CheckInForm offline", () => {
   beforeEach(() => {
+    resetSharedOfflineForTests()
     vi.clearAllMocks()
   })
   afterEach(cleanup)
@@ -96,5 +100,41 @@ describe("CheckInForm offline", () => {
     expect(screen.queryByText(/queued/i)).toBeNull()
     expect(recordAttendance).not.toHaveBeenCalled()
     await expect(getSharedQueue().pendingCount("EVT-ONLINE-2")).resolves.toBe(0)
+  })
+
+  it("queues the confirmation when recording fails offline", async () => {
+    vi.mocked(checkAttendance).mockResolvedValue({
+      success: true,
+      check: {
+        present: false,
+        student: {
+          srcode: "26-00001",
+          name: "Juan Dela Cruz",
+          college: "Engineering",
+          program: "BS Computer Engineering",
+          yearLevel: "3rd Year",
+          gender: "Male",
+        },
+      },
+    })
+    vi.mocked(recordAttendance).mockRejectedValue(new TypeError("offline"))
+    render(
+      <CheckInForm eventId="EVT-CONF-1" eventName="E" eventActive={true} />
+    )
+    fireEvent.change(screen.getByLabelText("Enter SR Code"), {
+      target: { value: "26-00001" },
+    })
+    fireEvent.click(screen.getByRole("button", { name: /validate sr code/i }))
+    await waitFor(() => {
+      expect(screen.getByText("Juan Dela Cruz")).toBeTruthy()
+    })
+    fireEvent.click(screen.getByRole("button", { name: /confirm attendance/i }))
+    await waitFor(() => {
+      expect(screen.getByText(/queued/i).textContent).toContain("Queued")
+    })
+    // The server call was attempted once and failed; the scan is queued.
+    expect(recordAttendance).toHaveBeenCalledTimes(1)
+    await expect(getSharedQueue().pendingCount("EVT-CONF-1")).resolves.toBe(1)
+    expect(screen.queryByRole("alert")).toBeNull()
   })
 })

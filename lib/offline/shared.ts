@@ -1,19 +1,31 @@
-import { createIndexedDBStorage, createMemoryStorage } from "./store"
+import {
+  createIndexedDBStorage,
+  createMemoryStorage,
+  type OfflineStorage,
+} from "./store"
 import { createScanQueue, type ScanQueue } from "./queue"
 import { createSnapshotStore, type SnapshotStore } from "./snapshots"
 
+let storage: OfflineStorage | null = null
 let shared: ScanQueue | null = null
 let sharedSnapshots: SnapshotStore | null = null
 let fallback = false
 
-export function getSharedQueue(): ScanQueue {
-  if (!shared) {
+function getSharedStorage(): OfflineStorage {
+  if (!storage) {
     if (typeof indexedDB === "undefined") {
       fallback = true
-      shared = createScanQueue(createMemoryStorage())
+      storage = createMemoryStorage()
     } else {
-      shared = createScanQueue(createIndexedDBStorage())
+      storage = createIndexedDBStorage()
     }
+  }
+  return storage
+}
+
+export function getSharedQueue(): ScanQueue {
+  if (!shared) {
+    shared = createScanQueue(getSharedStorage())
   }
   return shared
 }
@@ -24,12 +36,14 @@ export function isMemoryFallback(): boolean {
 
 export function getSharedSnapshots(): SnapshotStore {
   if (!sharedSnapshots) {
-    if (typeof indexedDB === "undefined") {
-      fallback = true
-      sharedSnapshots = createSnapshotStore(createMemoryStorage())
-    } else {
-      sharedSnapshots = createSnapshotStore(createIndexedDBStorage())
-    }
+    sharedSnapshots = createSnapshotStore(getSharedStorage())
   }
   return sharedSnapshots
+}
+
+export function resetSharedOfflineForTests(): void {
+  storage = null
+  shared = null
+  sharedSnapshots = null
+  fallback = false
 }

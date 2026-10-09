@@ -57,16 +57,53 @@ function run<T>(
   work: (s: IDBObjectStore) => IDBRequest<T>
 ): Promise<T> {
   return new Promise((resolve, reject) => {
-    const tx = db.transaction(store, mode)
-    const request = work(tx.objectStore(store))
-    request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(request.error)
+    let tx: IDBTransaction
+    try {
+      tx = db.transaction(store, mode)
+    } catch (err) {
+      reject(err)
+      return
+    }
+    // Resolve only when the transaction commits: a request-level success
+    // can still be followed by an abort, which must surface as a failure.
+    let result: T | undefined
+    let settled = false
+    tx.oncomplete = () => {
+      if (settled) return
+      settled = true
+      resolve(result as T)
+    }
+    const fail = () => {
+      if (settled) return
+      settled = true
+      reject(tx.error ?? new Error("Transaction aborted."))
+    }
+    tx.onerror = fail
+    tx.onabort = fail
+    let request: IDBRequest<T>
+    try {
+      request = work(tx.objectStore(store))
+    } catch (err) {
+      reject(err)
+      return
+    }
+    request.onsuccess = () => {
+      result = request.result
+    }
+    request.onerror = () => {
+      // Unhandled: the transaction aborts and tx.onerror/onabort rejects.
+    }
   })
 }
 
 export function createIndexedDBStorage(
   dbName = "atty-offline"
 ): OfflineStorage {
+  // Factory-time guard so server-side importers never crash on the bare
+  // `indexedDB` reference below; they get an in-memory store instead.
+  if (typeof indexedDB === "undefined") {
+    return createMemoryStorage()
+  }
   const db = openDb(dbName)
   return {
     get: async (store, key) => {

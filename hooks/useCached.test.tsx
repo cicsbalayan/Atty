@@ -4,10 +4,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest"
 import { act, cleanup, render, screen, waitFor } from "@testing-library/react"
 import * as React from "react"
-import { getSharedSnapshots } from "@/lib/offline/shared"
+import { ApiError } from "@/lib/api-client"
+import {
+  getSharedSnapshots,
+  resetSharedOfflineForTests,
+} from "@/lib/offline/shared"
 import { invalidatePrefix, refreshAllReads, useCached } from "./useCached"
 
 beforeEach(() => {
+  resetSharedOfflineForTests()
   refreshAllReads()
 })
 
@@ -151,7 +156,30 @@ describe("useCached snapshots", () => {
     await getSharedSnapshots().save("events:all", "value")
     refreshAllReads()
     setOnline(false)
-    render(<SnapshotProbe fetcher={() => Promise.reject(new Error("down"))} />)
+    // Real offline fetch failures reject with TypeError; only those fall
+    // back to a snapshot (see the auth test below).
+    render(
+      <SnapshotProbe fetcher={() => Promise.reject(new TypeError("down"))} />
+    )
     await waitFor(() => expect(screen.getByText("saved:value")).toBeTruthy())
   })
+
+  it("surfaces auth errors instead of masking them as a saved copy", async () => {
+    await getSharedSnapshots().save("events:all", "value")
+    refreshAllReads()
+    render(<AuthProbe />)
+    await waitFor(() => expect(screen.getByText("error:No.")).toBeTruthy())
+    expect(screen.queryByText("saved:value")).toBeNull()
+  })
 })
+
+function AuthProbe() {
+  const { error, loading } = useCached<string>(
+    "events:all",
+    () => Promise.reject(new ApiError("UNAUTHORIZED", "No.", 401)),
+    10_000
+  )
+  if (loading) return <p>loading</p>
+  if (error) return <p>{`error:${error.message}`}</p>
+  return <p>unexpected</p>
+}

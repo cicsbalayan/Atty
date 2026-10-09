@@ -54,6 +54,12 @@ export function QueueStatus({
 
   // Auto-sync on reconnect when anything is queued.
   const first = React.useRef(true)
+  const syncingRef = React.useRef(syncing)
+  const onReportRef = React.useRef(onReport)
+  React.useEffect(() => {
+    syncingRef.current = syncing
+    onReportRef.current = onReport
+  })
   React.useEffect(() => {
     if (first.current) {
       first.current = false
@@ -61,11 +67,16 @@ export function QueueStatus({
     }
     if (!online) return
     const timer = setTimeout(() => {
-      void run()
+      // Recheck liveness inside the timer: going offline during the
+      // delay must cancel the run instead of firing with a stale closure.
+      if (!navigator.onLine || syncingRef.current) return
+      setSyncing(true)
+      syncQueue({ queue, eventId, record })
+        .then((report) => onReportRef.current(report))
+        .finally(() => setSyncing(false))
     }, 0)
     return () => clearTimeout(timer)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online])
+  }, [online, eventId, queue, record])
 
   if (count === 0 && !storageWarning) return null
   return (
