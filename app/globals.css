@@ -549,16 +549,20 @@
   }
 }
 
-/* ---- Kiosk focus mode (UNLAYERED — must beat layered utilities) ----
-   Hides app chrome in fullscreen, collapses the shell grid to one track,
-   and centers/scales the kiosk stage. */
-:fullscreen .app-chrome {
+/* ---- Kiosk focus mode / fullscreen (UNLAYERED — must beat utilities) ----
+   `[data-kiosk-focus]` is the in-window mode used by the check-in toggle:
+   it keeps the browser window's bounds, so a snapped half-screen window
+   stays half-screen. `:fullscreen` is kept for browser-level F11. */
+:fullscreen .app-chrome,
+[data-kiosk-focus="true"] .app-chrome {
   display: none;
 }
-:fullscreen .app-shell-grid {
+:fullscreen .app-shell-grid,
+[data-kiosk-focus="true"] .app-shell-grid {
   grid-template-columns: minmax(0, 1fr);
 }
-:fullscreen main {
+:fullscreen main,
+[data-kiosk-focus="true"] main {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -567,7 +571,8 @@
   padding-top: 6dvh;
   padding-bottom: var(--space-8);
 }
-:fullscreen .kiosk {
+:fullscreen .kiosk,
+[data-kiosk-focus="true"] .kiosk {
   width: 100%;
   margin-inline: auto;
 }
