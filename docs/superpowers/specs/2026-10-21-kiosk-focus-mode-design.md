@@ -29,6 +29,9 @@ available through the browser's own fullscreen (F11), and the existing
 - The button appears on the check-in page at all times; support detection for
   the Fullscreen API is no longer needed, so it also works in embedded
   previews where fullscreen is denied.
+- The chrome-hiding attribute is applied only while the kiosk toggle is
+  mounted. Navigating to any other route always restores the chrome; the
+  stored preference is restored the next time the check-in page opens.
 - Pressing <kbd>Escape</kbd> while focus mode is active exits it.
 - Labels and tooltips read "Enter focus mode" / "Exit focus mode"; the
   Maximize/Minimize icons stay.
